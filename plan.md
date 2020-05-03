@@ -11,8 +11,9 @@
 * Use setters if there is no value in constructor
 * Preserve annotations in generated classes
 * `@Generated` annotation
+* import other converters 
 
 ## Something to think of
 * Add errors to rendered file as comments?
-* Generate extension functions?
+* Generate extension functions? Companion objects?
 * Log error (recommendations) if not all properties mapped

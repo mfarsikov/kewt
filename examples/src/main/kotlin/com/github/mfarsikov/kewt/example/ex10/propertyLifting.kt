@@ -10,7 +10,7 @@ data class Name(val firstName: String)
 data class Employee(val name: String)
 
 @Mapper
-interface PersonMapping {
+interface PersonMapper {
     @Mappings([
         Mapping(source = "person.name.firstName", target = "name")
     ])

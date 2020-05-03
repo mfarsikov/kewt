@@ -1,4 +1,4 @@
-package com.github.mfarsikov.kewt.example.proto.ex1
+package com.github.mfarsikov.kewt.example.proto.ex01
 
 import com.github.mfarsikov.kewt.annotations.Mapper
 import com.github.mfarsikov.kewt.annotations.Mapping
@@ -12,11 +12,11 @@ import protohub.Person
 @Mapper
 interface PersonConverter {
     @Mappings([
-    Mapping(source = "name.name" , target = "firstName"),
-    Mapping(source = "name.surname" , target = "lastName")
+        Mapping(source = "name.name", target = "firstName"),
+        Mapping(source = "name.surname", target = "lastName")
     ])
     fun convert(person: Person): Employee
-    fun intToString(x:Int) = x.toString()
+    fun intToString(x: Int) = x.toString()
     fun toId(passport: Passport): ID
 }
 

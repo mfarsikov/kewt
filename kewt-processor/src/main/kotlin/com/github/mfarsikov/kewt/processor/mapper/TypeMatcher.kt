@@ -43,7 +43,7 @@ val aliases = listOf(
         listOf("kotlin.Float", "java.lang.Float", "float"),
         listOf("kotlin.String", "java.lang.String"),
         listOf("kotlin.Boolean", "java.lang.Boolean", "boolean"),
-        listOf("kotlin.collections.List", "java.util.List", "com.google.protobuf.ProtocolStringList")
+        listOf("kotlin.collections.List", "java.util.List")
 ).flatMap { list ->
     list.flatMap { item ->
         list.map { it to item }

@@ -6,17 +6,8 @@ import com.github.mfarsikov.kewt.annotations.Mappings
 
 
 @Mapper
-//@CompanionObject
-interface PersonConverter {
-//    @Mappings([
-//        Mapping(source = "firstName", target = "name")
-//    ])
-    // @AllowImplicitMappings(complexTypesOnly = true) TODO
-    // @UseConverter(Converter::class)
-    //@IgnoreExtra
+interface PersonMapper {
     fun toStudent(person: Person): Student
-
-//
 
     fun toStudentId(passport: PersonPassport): StudentId
 }

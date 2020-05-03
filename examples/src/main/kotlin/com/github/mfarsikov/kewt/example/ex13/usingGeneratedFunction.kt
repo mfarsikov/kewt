@@ -6,7 +6,7 @@ import com.github.mfarsikov.kewt.annotations.Mappings
 
 
 @Mapper
-interface RenderModelMapper {
+interface PersonMapper {
 
     fun convert(person: Person): Employee
 
@@ -19,11 +19,13 @@ interface RenderModelMapper {
 
 
 data class Person(
-        val name: String
+        val name: String,
+        val pet: Pet
 )
 
 data class Employee(
-        val name: String
+        val name: String,
+        val pet: EmployeesPet
 )
 
 

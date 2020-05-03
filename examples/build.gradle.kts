@@ -4,7 +4,7 @@ plugins {
     kotlin("jvm")
     kotlin("kapt")
     idea
-    id("io.wusa.semver-git-plugin").version("2.0.2")
+ //   id("io.wusa.semver-git-plugin").version("2.0.2")
 }
 
 repositories {
@@ -25,6 +25,14 @@ dependencies {
     kapt(project(":examples-proto-lib"))
 
     implementation("io.grpc:grpc-protobuf:1.26.0")
+
+    testImplementation("io.kotest:kotest-assertions-core-jvm:4.0.3")
+    testImplementation("io.kotest:kotest-runner-junit5-jvm:4.0.3")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.withType<KotlinCompile> {
@@ -42,15 +50,15 @@ kapt {
     }
 }
 
-semver {
-    // snapshotSuffix = "SNAPSHOT" (default) appended if the commit is without a release tag
-    dirtyMarker = "dirty" //(default) appended if the are uncommitted changes
-    //   initialVersion = "0.1.0" (default) initial version in semantic versioning
-    branches {
-        branch {
-            regex = "master"
-            incrementer = "NO_VERSION_INCREMENTER" //(default) version incrementer
-            formatter = Transformer { "${semver.info.version.major}.${semver.info.version.minor}.${semver.info.version.patch}" }
-        }
-    }
-}
+//semver {
+//    // snapshotSuffix = "SNAPSHOT" (default) appended if the commit is without a release tag
+//    dirtyMarker = "dirty" //(default) appended if the are uncommitted changes
+//    //   initialVersion = "0.1.0" (default) initial version in semantic versioning
+//    branches {
+//        branch {
+//            regex = "master"
+//            incrementer = "NO_VERSION_INCREMENTER" //(default) version incrementer
+//            formatter = Transformer { "${semver.info.version.major}.${semver.info.version.minor}.${semver.info.version.patch}" }
+//        }
+//    }
+//}
