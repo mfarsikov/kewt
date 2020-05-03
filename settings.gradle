@@ -1,0 +1,1 @@
+include("kewt-processor", "kewt-annotations", "examples", "examples-proto-lib")

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+
+package protohub;
+
+message Person{
+  PersonName name = 1;
+  int64 idLong = 2;
+  bool happyOrNot = 3;
+  repeated int32 ids = 4;
+  Pet pet = 5;
+  repeated Passport passports = 6;
+}
+
+
+message Employee{
+  string firstName = 1;
+  string lastName = 8;
+  int64 id = 2;
+  bool happy = 3;
+  repeated string ids = 4;
+  Pet pet = 5;
+  repeated ID identities = 7;
+}
+
+message PersonName {
+  string name = 1;
+  string surname = 2;
+}
+
+message Pet{
+  string name = 1;
+  int32 age = 2;
+}
+message Passport{
+  string id = 1;
+}
+
+message ID{
+  string id = 1;
+}
