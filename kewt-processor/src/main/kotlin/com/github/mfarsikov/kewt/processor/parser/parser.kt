@@ -29,7 +29,6 @@ fun parse(element: Element, processingEnv: ProcessingEnvironment): AClass {
                         name = it.name.toString(),
                         params = it.params.map { it.type.toType() }
                 )
-
             }) {
                 it.getAnnotation(Mappings::class.java)
             }
