@@ -12,11 +12,20 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.TypeSpec
+import java.time.OffsetDateTime
 
-fun render(converter: RenderConverterClass): String {
+fun render(converter: RenderConverterClass, version:String, date: OffsetDateTime): String {
     val fsb = FileSpec.builder(converter.type.packageName, converter.type.name)
     val classBuilder = TypeSpec.classBuilder("${converter.type.name}Impl")
     classBuilder.addSuperinterface(ClassName(converter.type.packageName, converter.type.name))
+
+    val generatedAnnotation = AnnotationSpec.builder(ClassName("javax.annotation", "Generated"))
+            .addMember("value = [%S]", "com.github.mfarsikov.kewt.processor.KewtMapperProcessor")
+            .addMember("date = %S", date)
+            .addMember("comments = %S", version)
+            .build()
+    classBuilder.addAnnotation(generatedAnnotation)
+
     if (converter.springComponent) {
         val springComponent = AnnotationSpec.builder(ClassName("org.springframework.stereotype", "Component")).build()
         classBuilder.addAnnotation(springComponent)

@@ -7,6 +7,7 @@ import com.github.mfarsikov.kewt.processor.mapper.ConversionContext
 import io.kotest.matchers.shouldBe
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
+import java.time.OffsetDateTime
 
 class RendererKtTest {
     val STRING = Type("kotlin", "String")
@@ -14,38 +15,42 @@ class RendererKtTest {
 
     @Test
     fun `should render`() {
-        val res = render(RenderConverterClass(
-                type = Type(packageName = "mypckg", name = "MyConveretr"),
-                converterFunctions = listOf(RenderConverterFunction(
-                        name = "doconvert",
-                        returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
-                        parameters = listOf(Parameter(
-                                name = "person",
-                                type = Type(
-                                        name = "Person",
-                                        packageName = "com.personPackage"
+        val res = render(
+                RenderConverterClass(
+                        type = Type(packageName = "mypckg", name = "MyConveretr"),
+                        converterFunctions = listOf(RenderConverterFunction(
+                                name = "doconvert",
+                                returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
+                                parameters = listOf(Parameter(
+                                        name = "person",
+                                        type = Type(
+                                                name = "Person",
+                                                packageName = "com.personPackage"
+                                        )
+                                )),
+                                returnType = Type(
+                                        name = "Employee",
+                                        packageName = "com.employeePackage"
+                                ),
+                                mappings = listOf(
+                                        propertyMapping(
+                                                parameterName = "person",
+                                                sourceProperty = "firstName",
+                                                targetProperty = "firstName"
+                                        ),
+                                        propertyMapping(
+                                                parameterName = "person",
+                                                sourceProperty = "lastName",
+                                                targetProperty = "lastName",
+                                                conversionFunction = "convert"
+                                        )
                                 )
                         )),
-                        returnType = Type(
-                                name = "Employee",
-                                packageName = "com.employeePackage"
-                        ),
-                        mappings = listOf(
-                                propertyMapping(
-                                        parameterName = "person",
-                                        sourceProperty = "firstName",
-                                        targetProperty = "firstName"
-                                ),
-                                propertyMapping(
-                                        parameterName = "person",
-                                        sourceProperty = "lastName",
-                                        targetProperty = "lastName",
-                                        conversionFunction = "convert"
-                                )
-                        )
-                )),
-                springComponent = false
-        ))
+                        springComponent = false
+                ),
+                version = "v-1.0.0-SNAPSHOT",
+                date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+        )
 
         @Language("kotlin")
         val l = """
@@ -53,7 +58,13 @@ class RendererKtTest {
 
              import com.employeePackage.Employee
              import com.personPackage.Person
+             import javax.annotation.Generated
              
+             @Generated(
+               value = ["com.github.mfarsikov.kewt.processor.KewtMapperProcessor"],
+               date = "2020-12-31T23:59:59Z",
+               comments = "v-1.0.0-SNAPSHOT"
+             )
              class MyConveretrImpl : MyConveretr {
                override fun doconvert(person: Person): Employee = Employee(
                    firstName = person.firstName,
@@ -87,11 +98,162 @@ class RendererKtTest {
 
     @Test
     fun `should render2`() {
-        val res = render(RenderConverterClass(
-                type = Type(packageName = "mypckg", name = "MyConveretr"),
-                converterFunctions = listOf(
-                        RenderConverterFunction(
-                                name = "convert1",
+
+        val res = render(
+                RenderConverterClass(
+                        type = Type(packageName = "mypckg", name = "MyConveretr"),
+                        converterFunctions = listOf(
+                                RenderConverterFunction(
+                                        name = "convert1",
+                                        returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
+                                        parameters = listOf(Parameter(
+                                                name = "person",
+                                                type = Type(
+                                                        name = "Person",
+                                                        packageName = "com.personPackage"
+                                                )
+                                        )),
+                                        returnType = Type(
+                                                name = "Employee",
+                                                packageName = "com.employeePackage"
+                                        ),
+                                        mappings = listOf(
+                                                propertyMapping(
+                                                        parameterName = "person",
+                                                        sourceProperty = "firstName",
+                                                        targetProperty = "firstName"
+                                                ),
+                                                propertyMapping(
+                                                        parameterName = "person",
+                                                        sourceProperty = "lastName",
+                                                        targetProperty = "lastName",
+                                                        conversionFunction = "convert"
+                                                )
+                                        )
+                                ),
+                                RenderConverterFunction(
+                                        name = "convert2",
+                                        returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
+                                        parameters = listOf(Parameter(
+                                                name = "person",
+                                                type = Type(name = "Person", packageName = "com.personPackage")
+                                        )),
+                                        returnType = Type(name = "Employee", packageName = "com.employeePackage"),
+                                        mappings = listOf(
+                                                propertyMapping(
+                                                        parameterName = "person",
+                                                        sourceProperty = "firstName",
+                                                        targetProperty = "firstName"
+                                                ),
+                                                propertyMapping(
+                                                        parameterName = "person",
+                                                        sourceProperty = "lastName",
+                                                        targetProperty = "lastName",
+                                                        conversionFunction = "convert"
+                                                )
+                                        )
+                                )
+                        ),
+                        springComponent = false
+                ),
+                version = "v-1.0.0-SNAPSHOT",
+                date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+        )
+
+
+        @Language("kotlin")
+        val l = """
+             package mypckg
+
+             import com.employeePackage.Employee
+             import com.personPackage.Person
+             import javax.annotation.Generated
+             
+             @Generated(
+               value = ["com.github.mfarsikov.kewt.processor.KewtMapperProcessor"],
+               date = "2020-12-31T23:59:59Z",
+               comments = "v-1.0.0-SNAPSHOT"
+             )
+             class MyConveretrImpl : MyConveretr {
+               override fun convert1(person: Person): Employee = Employee(
+                   firstName = person.firstName,
+                   lastName = convert(person.lastName)
+               )
+               override fun convert2(person: Person): Employee = Employee(
+                   firstName = person.firstName,
+                   lastName = convert(person.lastName)
+               )}
+
+         """.trimIndent()
+
+        res shouldBe l
+    }
+
+    @Test
+    fun `render collection mapping`() {
+        val res = render(
+                RenderConverterClass(
+                        type = Type(packageName = "mypckg", name = "MyConveretr"),
+                        converterFunctions = listOf(RenderConverterFunction(
+                                name = "convert",
+                                returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
+                                parameters = listOf(Parameter(
+                                        name = "person",
+                                        type = Type(
+                                                name = "Person",
+                                                packageName = "com.personPackage"
+                                        )
+                                )),
+                                returnType = Type(
+                                        name = "Employee",
+                                        packageName = "com.employeePackage"
+                                ),
+                                mappings = listOf(
+                                        propertyMapping(
+                                                parameterName = "person",
+                                                sourceProperty = "ids",
+                                                targetProperty = "ids",
+                                                conversionFunction = "f",
+                                                usingElementMapping = true
+                                        )
+                                )
+                        )),
+                        springComponent = false
+                ),
+                version = "v-1.0.0-SNAPSHOT",
+                date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+        )
+
+        @Language("kotlin")
+        val l = """
+             package mypckg
+
+             import com.employeePackage.Employee
+             import com.personPackage.Person
+             import javax.annotation.Generated
+             
+             @Generated(
+               value = ["com.github.mfarsikov.kewt.processor.KewtMapperProcessor"],
+               date = "2020-12-31T23:59:59Z",
+               comments = "v-1.0.0-SNAPSHOT"
+             )
+             class MyConveretrImpl : MyConveretr {
+               override fun convert(person: Person): Employee = Employee(
+                   ids = person.ids.map { f(it) }
+               )}
+
+         """.trimIndent()
+
+        res shouldBe l
+    }
+
+    @Test
+    fun `render component annotation`() {
+        val res = render(
+                RenderConverterClass(
+                        type = Type(packageName = "mypckg", name = "MyConveretr"),
+                        converterFunctions = listOf(RenderConverterFunction(
+                                name = "doconvert",
                                 returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
                                 parameters = listOf(Parameter(
                                         name = "person",
@@ -117,86 +279,12 @@ class RendererKtTest {
                                                 conversionFunction = "convert"
                                         )
                                 )
-                        ),
-                        RenderConverterFunction(
-                                name = "convert2",
-                                returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
-                                parameters = listOf(Parameter(
-                                        name = "person",
-                                        type = Type(name = "Person", packageName = "com.personPackage")
-                                )),
-                                returnType = Type(name = "Employee", packageName = "com.employeePackage"),
-                                mappings = listOf(
-                                        propertyMapping(
-                                                parameterName = "person",
-                                                sourceProperty = "firstName",
-                                                targetProperty = "firstName"
-                                        ),
-                                        propertyMapping(
-                                                parameterName = "person",
-                                                sourceProperty = "lastName",
-                                                targetProperty = "lastName",
-                                                conversionFunction = "convert"
-                                        )
-                                )
-                        )
+                        )),
+                        springComponent = true
                 ),
-                springComponent = false
-        ))
-
-
-        @Language("kotlin")
-        val l = """
-             package mypckg
-
-             import com.employeePackage.Employee
-             import com.personPackage.Person
-             
-             class MyConveretrImpl : MyConveretr {
-               override fun convert1(person: Person): Employee = Employee(
-                   firstName = person.firstName,
-                   lastName = convert(person.lastName)
-               )
-               override fun convert2(person: Person): Employee = Employee(
-                   firstName = person.firstName,
-                   lastName = convert(person.lastName)
-               )}
-
-         """.trimIndent()
-
-        res shouldBe l
-    }
-
-    @Test
-    fun `render collection mapping`() {
-        val res = render(RenderConverterClass(
-                type = Type(packageName = "mypckg", name = "MyConveretr"),
-                converterFunctions = listOf(RenderConverterFunction(
-                        name = "convert",
-                        returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
-                        parameters = listOf(Parameter(
-                                name = "person",
-                                type = Type(
-                                        name = "Person",
-                                        packageName = "com.personPackage"
-                                )
-                        )),
-                        returnType = Type(
-                                name = "Employee",
-                                packageName = "com.employeePackage"
-                        ),
-                        mappings = listOf(
-                                propertyMapping(
-                                        parameterName = "person",
-                                        sourceProperty = "ids",
-                                        targetProperty = "ids",
-                                        conversionFunction = "f",
-                                        usingElementMapping = true
-                                )
-                        )
-                )),
-                springComponent = false
-        ))
+                version = "v-1.0.0-SNAPSHOT",
+                date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+        )
 
         @Language("kotlin")
         val l = """
@@ -204,60 +292,14 @@ class RendererKtTest {
 
              import com.employeePackage.Employee
              import com.personPackage.Person
-             
-             class MyConveretrImpl : MyConveretr {
-               override fun convert(person: Person): Employee = Employee(
-                   ids = person.ids.map { f(it) }
-               )}
-
-         """.trimIndent()
-
-        res shouldBe l
-    }
-
-    @Test
-    fun `render component annotation`() {
-        val res = render(RenderConverterClass(
-                type = Type(packageName = "mypckg", name = "MyConveretr"),
-                converterFunctions = listOf(RenderConverterFunction(
-                        name = "doconvert",
-                        returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
-                        parameters = listOf(Parameter(
-                                name = "person",
-                                type = Type(
-                                        name = "Person",
-                                        packageName = "com.personPackage"
-                                )
-                        )),
-                        returnType = Type(
-                                name = "Employee",
-                                packageName = "com.employeePackage"
-                        ),
-                        mappings = listOf(
-                                propertyMapping(
-                                        parameterName = "person",
-                                        sourceProperty = "firstName",
-                                        targetProperty = "firstName"
-                                ),
-                                propertyMapping(
-                                        parameterName = "person",
-                                        sourceProperty = "lastName",
-                                        targetProperty = "lastName",
-                                        conversionFunction = "convert"
-                                )
-                        )
-                )),
-                springComponent = true
-        ))
-
-        @Language("kotlin")
-        val l = """
-             package mypckg
-
-             import com.employeePackage.Employee
-             import com.personPackage.Person
+             import javax.annotation.Generated
              import org.springframework.stereotype.Component
-             
+
+             @Generated(
+               value = ["com.github.mfarsikov.kewt.processor.KewtMapperProcessor"],
+               date = "2020-12-31T23:59:59Z",
+               comments = "v-1.0.0-SNAPSHOT"
+             )
              @Component
              class MyConveretrImpl : MyConveretr {
                override fun doconvert(person: Person): Employee = Employee(
@@ -272,37 +314,41 @@ class RendererKtTest {
 
     @Test
     fun `render protobuf`() {
-        val res = render(RenderConverterClass(
-                type = Type(packageName = "mypckg", name = "MyConveretr"),
-                converterFunctions = listOf(RenderConverterFunction(
-                        name = "doconvert",
-                        returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.PROTO,
-                        parameters = listOf(Parameter(
-                                name = "person",
-                                type = Type(
-                                        name = "Person",
-                                        packageName = "com.personPackage"
+        val res = render(
+                RenderConverterClass(
+                        type = Type(packageName = "mypckg", name = "MyConveretr"),
+                        converterFunctions = listOf(RenderConverterFunction(
+                                name = "doconvert",
+                                returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.PROTO,
+                                parameters = listOf(Parameter(
+                                        name = "person",
+                                        type = Type(
+                                                name = "Person",
+                                                packageName = "com.personPackage"
+                                        )
+                                )),
+                                returnType = Type(
+                                        name = "Employee",
+                                        packageName = "com.employeePackage"
+                                ),
+                                mappings = listOf(
+                                        propertyMapping(
+                                                parameterName = "person",
+                                                sourceProperty = "firstName",
+                                                targetProperty = "firstName"
+                                        ),
+                                        propertyMapping(
+                                                parameterName = "person",
+                                                sourceProperty = "lastName",
+                                                targetProperty = "lastName"
+                                        )
                                 )
                         )),
-                        returnType = Type(
-                                name = "Employee",
-                                packageName = "com.employeePackage"
-                        ),
-                        mappings = listOf(
-                                propertyMapping(
-                                        parameterName = "person",
-                                        sourceProperty = "firstName",
-                                        targetProperty = "firstName"
-                                ),
-                                propertyMapping(
-                                        parameterName = "person",
-                                        sourceProperty = "lastName",
-                                        targetProperty = "lastName"
-                                )
-                        )
-                )),
-                springComponent = false
-        ))
+                        springComponent = false
+                ),
+                version = "v-1.0.0-SNAPSHOT",
+                date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+        )
 
         @Language("kotlin")
         val l = """
@@ -310,7 +356,13 @@ class RendererKtTest {
 
              import com.employeePackage.Employee
              import com.personPackage.Person
+             import javax.annotation.Generated
              
+             @Generated(
+               value = ["com.github.mfarsikov.kewt.processor.KewtMapperProcessor"],
+               date = "2020-12-31T23:59:59Z",
+               comments = "v-1.0.0-SNAPSHOT"
+             )
              class MyConveretrImpl : MyConveretr {
                override fun doconvert(person: Person): Employee {
                  @Suppress("UNNECESSARY_SAFE_CALL")return Employee.newBuilder().apply {

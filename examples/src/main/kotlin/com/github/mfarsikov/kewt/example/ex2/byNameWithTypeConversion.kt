@@ -12,4 +12,3 @@ interface PersonMapper {
 
     fun uuidToString(uuid: UUID): String = uuid.toString()
 }
-

@@ -10,6 +10,8 @@ import com.github.mfarsikov.kewt.processor.render.RenderConverterFunction
 import com.github.mfarsikov.kewt.processor.render.RenderPropertyMappings
 import com.github.mfarsikov.kewt.processor.render.render
 import com.github.mfarsikov.kewt.processor.resolver.PropertiesResolverImpl
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.RoundEnvironment
@@ -41,7 +43,8 @@ class KewtMapperProcessor : AbstractProcessor() {
     }
 
     override fun process(annotations: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
-        if (roundEnv.processingOver()) return false;
+        if (roundEnv.processingOver()) return false
+        val now = LocalDateTime.now()
         Logger.info("Start processing @Mapper annotations")
 
         try {
@@ -90,31 +93,35 @@ class KewtMapperProcessor : AbstractProcessor() {
                                 calculateMappings(resolvedFunction = resolvedFunction, conversionFunctions = conversionFunctions)
                             }
 
-                    val text = render(RenderConverterClass(
-                            type = parsedInterface.type,
-                            converterFunctions = mappingsResults.map {
-                                RenderConverterFunction(
-                                        name = it.name,
-                                        returnTypeLanguage = it.returnType.language,
-                                        parameters = it.parameters.map {
-                                            Parameter(
-                                                    name = it.name,
-                                                    type = it.resolvedType.type
-                                            )
-                                        },
-                                        returnType = it.returnType.type,
-                                        mappings = it.mappings.map {
-                                            RenderPropertyMappings(
-                                                    parameterName = it.parameterName,
-                                                    sourcePropertyName = it.sourceProperty.name,
-                                                    targetPropertyName = it.targetProperty.name,
-                                                    conversionContext = it.conversionContext!!
-                                            )
-                                        }
-                                )
-                            },
-                            springComponent = springComponent
-                    ))
+                    val text = render(
+                            RenderConverterClass(
+                                    type = parsedInterface.type,
+                                    converterFunctions = mappingsResults.map {
+                                        RenderConverterFunction(
+                                                name = it.name,
+                                                returnTypeLanguage = it.returnType.language,
+                                                parameters = it.parameters.map {
+                                                    Parameter(
+                                                            name = it.name,
+                                                            type = it.resolvedType.type
+                                                    )
+                                                },
+                                                returnType = it.returnType.type,
+                                                mappings = it.mappings.map {
+                                                    RenderPropertyMappings(
+                                                            parameterName = it.parameterName,
+                                                            sourcePropertyName = it.sourceProperty.name,
+                                                            targetPropertyName = it.targetProperty.name,
+                                                            conversionContext = it.conversionContext!!
+                                                    )
+                                                }
+                                        )
+                                    },
+                                    springComponent = springComponent
+                            ),
+                            version = "v-0.1.6-SNAPSHOT",//TODO
+                            date = now.atOffset(ZoneOffset.UTC)
+                    )
 
                     val file = processingEnv.filer.createResource(StandardLocation.SOURCE_OUTPUT, parsedInterface.type.packageName, "${parsedInterface.type.name}Impl.kt", element)
 

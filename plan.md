@@ -1,7 +1,5 @@
 # Plan
 ## Mandatory
-* Check name matching, with same name in defferent sources (ambiguous)
-  * with same name in different sources but with differnet types (not ambiguous)
 * Explicit converter for any property `@Mapping(source = "x", target = "y", converter = "f")`
 * Map target field from parameter
 * Allow converter functions to use whole object
@@ -10,7 +8,7 @@
 ## Nice to have
 * Use setters if there is no value in constructor
 * Preserve annotations in generated classes
-* `@Generated` annotation
+* `@Generated` use actual version from gradle
 * import other converters 
 
 ## Something to think of
