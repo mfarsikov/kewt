@@ -45,6 +45,11 @@ class KewtMapperProcessor : AbstractProcessor() {
     override fun process(annotations: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
         if (roundEnv.processingOver()) return false
         val now = LocalDateTime.now()
+
+        val version = this::class.java.classLoader
+                .getResource("META-INF/build-info.properties")
+                ?.readText() ?: "unknown version"
+
         Logger.info("Start processing @Mapper annotations")
 
         try {
@@ -119,7 +124,7 @@ class KewtMapperProcessor : AbstractProcessor() {
                                     },
                                     springComponent = springComponent
                             ),
-                            version = "v-0.1.6-SNAPSHOT",//TODO
+                            version = version,
                             date = now.atOffset(ZoneOffset.UTC)
                     )
 

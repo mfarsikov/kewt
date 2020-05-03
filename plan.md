@@ -8,7 +8,6 @@
 ## Nice to have
 * Use setters if there is no value in constructor
 * Preserve annotations in generated classes
-* `@Generated` use actual version from gradle
 * import other converters 
 
 ## Something to think of
