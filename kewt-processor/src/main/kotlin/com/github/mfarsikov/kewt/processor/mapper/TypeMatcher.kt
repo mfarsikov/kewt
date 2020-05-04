@@ -1,6 +1,7 @@
 package com.github.mfarsikov.kewt.processor.mapper
 
 import com.github.mfarsikov.kewt.processor.ConversionFunction
+import com.github.mfarsikov.kewt.processor.KewtException
 import com.github.mfarsikov.kewt.processor.Nullability.NON_NULLABLE
 import com.github.mfarsikov.kewt.processor.Nullability.NULLABLE
 import com.github.mfarsikov.kewt.processor.Nullability.PLATFORM
@@ -11,17 +12,21 @@ class TypeMatcher(
         private val conversionFunctions: List<ConversionFunction>
 ) {
 
-    fun findConversion(from: Type, to: Type): ConversionContext? {
+    fun findConversion(from: Type, to: Type, explicitConverter: String? = null): ConversionContext? {
 
         if (from canBeAssignedTo to) return ConversionContext()
 
 
-        val conversionFunction = conversionFunctions.filter { from canBeAssignedTo it.parameter.type && it.returnType canBeAssignedTo to }
-                .singleOrNull()
+        val conversionFunctionCandidates = conversionFunctions
+                .filter { explicitConverter == null || it.name == explicitConverter }
+                .filter { from canBeAssignedTo it.parameter.type && it.returnType canBeAssignedTo to }
+
+        if(conversionFunctionCandidates.size > 1) throw KewtException("More than one function can convert ($from) -> $to: $conversionFunctionCandidates")
+        val conversionFunction = conversionFunctionCandidates.singleOrNull()
         return when {
             conversionFunction != null -> ConversionContext(conversionFunction)
-            from.nullability == NULLABLE && to.nullability == NULLABLE -> findConversion(from.copy(nullability = NON_NULLABLE), to)?.copy(usingNullSafeCall = true)
-            from.isList() && to.isList() && (from.copy(typeParameters = emptyList()) canBeAssignedTo to.copy(typeParameters = emptyList())) -> findConversion(from.typeParameters.single(), to.typeParameters.single())
+            from.nullability == NULLABLE && to.nullability == NULLABLE -> findConversion(from.copy(nullability = NON_NULLABLE), to, explicitConverter)?.copy(usingNullSafeCall = true)
+            from.isList() && to.isList() && (from.copy(typeParameters = emptyList()) canBeAssignedTo to.copy(typeParameters = emptyList())) -> findConversion(from.typeParameters.single(), to.typeParameters.single(), explicitConverter)
                     ?.copy(usingElementMapping = true)
             else -> null
         }

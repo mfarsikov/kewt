@@ -2,6 +2,7 @@ package com.github.mfarsikov.kewt.processor.mapper
 
 import com.github.mfarsikov.kewt.processor.AmbiguousMappingException
 import com.github.mfarsikov.kewt.processor.ConversionFunction
+import com.github.mfarsikov.kewt.processor.ExplicitConverter
 import com.github.mfarsikov.kewt.processor.KewtException
 import com.github.mfarsikov.kewt.processor.Logger
 import com.github.mfarsikov.kewt.processor.NameMapping
@@ -10,17 +11,30 @@ import com.github.mfarsikov.kewt.processor.Type
 
 
 fun calculateMappings(
-        resolvedFunction: ResolvedFunction,
+        function: ReadyForMappingFunction,
         conversionFunctions: List<ConversionFunction>
 ): MappedFunction {
 
 
-    resolvedFunction.nameMappings.groupBy { it.targetParameterName }.filterValues { it.size > 1 }.takeIf { it.isNotEmpty() }?.let { throw KewtException("more than one source mapped to the same target: ${it.values.flatten()}}") }
+    //TODO move validation out of mapping calculations
+    function.nameMappings.groupBy { it.targetParameterName }
+            .filterValues { it.size > 1 }
+            .takeIf { it.isNotEmpty() }
+            ?.let { throw KewtException("more than one source mapped to the same target: ${it.values.flatten()}}") }
 
+    val allSources = function.parameters.flatMap { parameter -> parameter.resolvedType.properties.map { "${parameter.name}.${it.name}" } }
+    val explicitlyMappedSources =function.nameMappings.map { "${it.parameterName}.${it.sourcePath}"}
+    val notExistingSources = explicitlyMappedSources - allSources
+    if (notExistingSources.isNotEmpty()) throw KewtException("Not existing sources: $notExistingSources")
 
-    val typeMapcher = TypeMatcher(conversionFunctions)
+    val explicitTargets = function.nameMappings.map { it.targetParameterName }
+    val allTargets = function.returnType.properties.map { it.name }
+    val notExistingTargets = explicitTargets - allTargets
+    if (notExistingTargets.isNotEmpty()) throw KewtException("Not existing targets: $notExistingTargets")
 
-    val sourceProperties = resolvedFunction.parameters.flatMap { parameter ->
+    val typeMatcher = TypeMatcher(conversionFunctions)
+
+    val sourceProperties = function.parameters.flatMap { parameter ->
         parameter.resolvedType.properties.map {
             FlatProperty(
                     parameterName = parameter.name,
@@ -30,22 +44,30 @@ fun calculateMappings(
         }
     }
 
-    val explicitMappings = resolvedFunction.returnType.properties.mapNotNull { targetProperty ->
-        val explicitNameMapping = resolvedFunction.nameMappings.filter { it.targetParameterName == targetProperty.name }.singleOrNull()
-        explicitNameMapping?.let { explicitMapping(resolvedFunction.parameters, it, typeMapcher, targetProperty) }
+    val explicitMappings = function.returnType.properties.mapNotNull { targetProperty ->
+        val explicitNameMapping = function.nameMappings.filter { it.targetParameterName == targetProperty.name }.singleOrNull()
+        explicitNameMapping?.let { nameMapping ->
+            explicitMapping(
+                    sources = function.parameters,
+                    explicitNameMapping = nameMapping,
+                    typeMatcher = typeMatcher,
+                    targetProperty = targetProperty,
+                    explicitConverter = function.explicitConverters.singleOrNull { it.targetName == targetProperty.name }?.converterName
+            )
+        }
     }
 
-    val explicitlyMappetTargets = explicitMappings.map { it.targetProperty }.toSet()
+    val explicitlyMappedTargets = explicitMappings.map { it.targetProperty }.toSet()
     val explicityMappedSources = explicitMappings.map { it.parameterName + it.sourceProperty.name }.toSet()
 
-    val targets = resolvedFunction.returnType.properties.filter { it !in explicitlyMappetTargets }
+    val targets = function.returnType.properties.filter { it !in explicitlyMappedTargets }
     val sources = sourceProperties.filter { it.parameterName + it.propertyName !in explicityMappedSources }
 
 
     val matchedByName = targets.mapNotNull { targetProperty ->
         val sourcesWithSameName = sources.filter { it.propertyName == targetProperty.name }
         val matchedByName = sourcesWithSameName.mapNotNull { sourceProperty ->
-            typeMapcher.findConversion(sourceProperty.propertyType, targetProperty.type)?.let {
+            typeMatcher.findConversion(sourceProperty.propertyType, targetProperty.type)?.let {
                 PropertyMapping(
                         parameterName = sourceProperty.parameterName,
                         sourceProperty = Parameter(sourceProperty.propertyName, sourceProperty.propertyType),
@@ -75,7 +97,7 @@ fun calculateMappings(
 
     val mappedByType = t.mapNotNull { targetProperty ->
         val typeMatches = s.mapNotNull { sourceProperty ->
-            typeMapcher.findConversion(sourceProperty.propertyType, targetProperty.type)?.let {
+            typeMatcher.findConversion(sourceProperty.propertyType, targetProperty.type)?.let {
                 PropertyMapping(
                         parameterName = sourceProperty.parameterName,
                         sourceProperty = Parameter(sourceProperty.propertyName, sourceProperty.propertyType),
@@ -95,14 +117,20 @@ fun calculateMappings(
     if (notMappedTargets.isNotEmpty()) throw KewtException("Not mapped targets: ${notMappedTargets}")
 
     return MappedFunction(
-            name = resolvedFunction.name,
-            parameters = resolvedFunction.parameters,
-            returnType = resolvedFunction.returnType,
+            name = function.name,
+            parameters = function.parameters,
+            returnType = function.returnType,
             mappings = explicitMappings + matchedByName + mappedByType
     )
 }
 
-private fun explicitMapping(sources: List<ResolvedParameter>, explicitNameMapping: NameMapping, typeMapcher: TypeMatcher, targetProperty: Parameter): PropertyMapping {
+private fun explicitMapping(
+        sources: List<ResolvedParameter>,
+        explicitNameMapping: NameMapping,
+        typeMatcher: TypeMatcher,
+        targetProperty: Parameter,
+        explicitConverter: String?
+): PropertyMapping {
     val sourceParameter = sources.singleOrNull() { it.name == explicitNameMapping.parameterName }
             ?: throw KewtException("not found parameter with name: ${explicitNameMapping.parameterName}")
 
@@ -110,8 +138,8 @@ private fun explicitMapping(sources: List<ResolvedParameter>, explicitNameMappin
             ?: throw KewtException("not found property ${explicitNameMapping.parameterName}.${explicitNameMapping.sourcePath}")
 
 
-    val c = typeMapcher.findConversion(property.type, targetProperty.type)
-            ?: throw KewtException("Cannot map properties, source:$property, target: $targetProperty")
+    val c = typeMatcher.findConversion(property.type, targetProperty.type, explicitConverter)
+            ?: throw KewtException("Cannot map properties, source { $property }, target { $targetProperty }")
 
     return PropertyMapping(
             parameterName = sourceParameter.name,
@@ -124,11 +152,12 @@ private fun explicitMapping(sources: List<ResolvedParameter>, explicitNameMappin
 
 fun PropertyMapping.stringify() = "${parameterName}.${sourceProperty.name}: ${sourceProperty.type} = ${targetProperty.name}: ${targetProperty.type}"
 
-data class ResolvedFunction(
+data class ReadyForMappingFunction(
         val name: String,
         val parameters: List<ResolvedParameter>,
         val returnType: ResolvedType,
-        val nameMappings: List<NameMapping>
+        val nameMappings: List<NameMapping>,
+        val explicitConverters: List<ExplicitConverter>
 )
 
 private data class FlatProperty(
@@ -154,12 +183,6 @@ data class ResolvedType(
 
 enum class Language { KOTLIN, JAVA, PROTO }
 
-data class MappingResult(
-        val function: ResolvedFunction,
-        val mappings: List<PropertyMapping>,
-        val notMatched: List<String>//TODO remove
-)
-
 data class MappedFunction(
         val name: String,
         val parameters: List<ResolvedParameter>,
@@ -178,7 +201,8 @@ data class PropertyMapping(
 
 data class AnnotationConfig(
         val source: String,
-        val target: String
+        val target: String,
+        val converter: String?
 )
 
 

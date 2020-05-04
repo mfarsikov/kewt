@@ -43,7 +43,6 @@ task("generateVersionFile"){
     inputs.property("version", project.version)
     outputs.file(buildInfoFile)
     doLast{
-        println("META-INF")
         file(buildInfoFile.parent).mkdirs()
         buildInfoFile.writeText("version=${project.version}")
     }

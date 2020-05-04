@@ -2,7 +2,7 @@ package com.github.mfarsikov.kewt.processor
 
 import com.github.mfarsikov.kewt.annotations.Mapper
 import com.github.mfarsikov.kewt.processor.mapper.AnnotationConfig
-import com.github.mfarsikov.kewt.processor.mapper.ResolvedFunction
+import com.github.mfarsikov.kewt.processor.mapper.ReadyForMappingFunction
 import com.github.mfarsikov.kewt.processor.mapper.calculateMappings
 import com.github.mfarsikov.kewt.processor.parser.parse
 import com.github.mfarsikov.kewt.processor.render.RenderConverterClass
@@ -95,11 +95,11 @@ class KewtMapperProcessor : AbstractProcessor() {
                                 val resolvedFunction = normalizeNamesAndResolveTypes(parsedFunction, propertiesResolver)
                                 Logger.debug("Explicit mappings: ${resolvedFunction.nameMappings}")
 
-                                calculateMappings(resolvedFunction = resolvedFunction, conversionFunctions = conversionFunctions)
+                                calculateMappings(function = resolvedFunction, conversionFunctions = conversionFunctions)
                             }
 
                     val text = render(
-                            RenderConverterClass(
+                            converter = RenderConverterClass(
                                     type = parsedInterface.type,
                                     converterFunctions = mappingsResults.map {
                                         RenderConverterFunction(
@@ -144,16 +144,19 @@ class KewtMapperProcessor : AbstractProcessor() {
         return false
     }
 
-    private fun normalizeNamesAndResolveTypes(parsedFunction: Function, propertiesResolver: PropertiesResolverImpl): ResolvedFunction {
+    private fun normalizeNamesAndResolveTypes(parsedFunction: Function, propertiesResolver: PropertiesResolverImpl): ReadyForMappingFunction {
         val nameMappings = normalizeNames(parsedFunction.parameters, parsedFunction.annotationConfigs)
 
         val (resolvedReturnType, resolvedParameters) = propertiesResolver.resolveTypes(parsedFunction.returnType, parsedFunction.parameters, nameMappings)
 
-        return ResolvedFunction(
+        return ReadyForMappingFunction(
                 name = parsedFunction.name,
                 parameters = resolvedParameters,
                 returnType = resolvedReturnType,
-                nameMappings = nameMappings
+                nameMappings = nameMappings,
+                explicitConverters = parsedFunction.annotationConfigs
+                        .filter { it.converter != null }
+                        .map { ExplicitConverter(targetName = it.target, converterName = it.converter!!) }
         )
     }
 
@@ -175,6 +178,11 @@ class KewtMapperProcessor : AbstractProcessor() {
 
 
 }
+
+data class ExplicitConverter(
+        val targetName: String,
+        val converterName: String
+)
 
 data class NameMapping(
         val parameterName: String,

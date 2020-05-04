@@ -44,7 +44,7 @@ fun parse(element: Element, processingEnv: ProcessingEnvironment): AClass {
 
         val annotation = annotationsBySignature[sig]
 
-        val annotationConfigs = annotation?.value?.map { AnnotationConfig(source = it.source, target = it.target) }
+        val annotationConfigs = annotation?.value?.map { AnnotationConfig(source = it.source, target = it.target, converter = it.converter.takeIf { it.isNotBlank() }) }
                 ?: emptyList()
 
         Function(

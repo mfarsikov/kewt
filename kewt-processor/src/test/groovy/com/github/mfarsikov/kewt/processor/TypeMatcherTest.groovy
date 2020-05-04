@@ -15,7 +15,8 @@ class TypeMatcherTest extends Specification {
                 toType(returnType)
         )]).findConversion(
                 toType(from),
-                toType(to)
+                toType(to),
+                null
         )
 
         (res != null) == success
@@ -41,7 +42,8 @@ class TypeMatcherTest extends Specification {
         expect:
         def res = new TypeMatcher([]).findConversion(
                 toType(from),
-                toType(to)
+                toType(to),
+                null
         )
         (res != null) == success
 

@@ -36,7 +36,8 @@ annotation class Mapper
 @Target(AnnotationTarget.FUNCTION)
 annotation class Mapping(
         val source: String = "",
-        val target: String = ""
+        val target: String = "",
+        val converter: String = ""
 )
 
 /**

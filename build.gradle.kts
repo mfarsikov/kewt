@@ -8,5 +8,5 @@ repositories {
 }
 
 allprojects {
-    version = "0.1.7-SNAPSHOT"
+    version = "0.1.7"
 }

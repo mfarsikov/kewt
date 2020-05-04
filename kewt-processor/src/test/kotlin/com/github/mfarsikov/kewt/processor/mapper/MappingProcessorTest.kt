@@ -2,6 +2,7 @@ package com.github.mfarsikov.kewt.processor.mapper
 
 import com.github.mfarsikov.kewt.processor.AmbiguousMappingException
 import com.github.mfarsikov.kewt.processor.ConversionFunction
+import com.github.mfarsikov.kewt.processor.ExplicitConverter
 import com.github.mfarsikov.kewt.processor.KewtException
 import com.github.mfarsikov.kewt.processor.NameMapping
 import com.github.mfarsikov.kewt.processor.Parameter
@@ -9,7 +10,7 @@ import com.github.mfarsikov.kewt.processor.Type
 import com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Disabled
+import io.kotest.matchers.string.shouldContain
 import org.junit.jupiter.api.Test
 import org.opentest4j.AssertionFailedError
 
@@ -43,7 +44,7 @@ class MappingProcessorTest {
         )
 
         res.mappings.size shouldBe 1
-        
+
         with(res.mappings.first()) {
             parameterName shouldBe "person"
             sourceProperty.name shouldBe "name"
@@ -76,7 +77,7 @@ class MappingProcessorTest {
         )
 
         res.mappings.size shouldBe 1
-        
+
         with(res.mappings.first()) {
             parameterName shouldBe "person"
             sourceProperty.name shouldBe "name.firstName"
@@ -168,7 +169,7 @@ class MappingProcessorTest {
         )
 
         res.mappings.size shouldBe 1
-        
+
         with(res.mappings.first()) {
             parameterName shouldBe "person"
             sourceProperty.name shouldBe "name"
@@ -231,7 +232,7 @@ class MappingProcessorTest {
                 conversionFunctions = emptyList()
         )
         res.mappings.size shouldBe 2
-        
+
 
         res.mappings.any { it.sourceProperty.name == "firstName" && it.targetProperty.name == "firstName" } shouldBe true
         res.mappings.any { it.sourceProperty.name == "surname" && it.targetProperty.name == "lastName" } shouldBe true
@@ -262,7 +263,7 @@ class MappingProcessorTest {
         )
 
         res.mappings.size shouldBe 1
-        
+
     }
 
     @Test
@@ -321,7 +322,7 @@ class MappingProcessorTest {
         )
 
         res.mappings.size shouldBe 1
-        
+
         with(res.mappings.single()) {
             sourceProperty.name shouldBe "id"
             targetProperty.name shouldBe "id"
@@ -358,7 +359,7 @@ class MappingProcessorTest {
         )
 
         res.mappings.size shouldBe 1
-        
+
         with(res.mappings.single()) {
             sourceProperty.name shouldBe "id"
             targetProperty.name shouldBe "uuid"
@@ -396,7 +397,7 @@ class MappingProcessorTest {
         )
 
         res.mappings.size shouldBe 1
-        
+
         with(res.mappings.single()) {
             sourceProperty.name shouldBe "ids"
             targetProperty.name shouldBe "ids"
@@ -436,7 +437,7 @@ class MappingProcessorTest {
 
         with(res) {
             mappings.size shouldBe 2
-            
+
             mappings shouldHaveAtLeastOne {
                 parameterName shouldBe "person"
                 sourceProperty.name shouldBe "name"
@@ -465,31 +466,30 @@ class MappingProcessorTest {
     }
 
     @Test
-    @Disabled //TODO
     fun `fail if explicitly mapped property does not exist`() {
-        val res = calculateMappings(
-                sources = listOf(ResolvedParameter(
-                        name = "person",
-                        resolvedType = ResolvedType(
-                                type = Type(packageName = "com.person.hub", name = "Person"),
-                                properties = setOf(
-                                        Parameter(name = "name", type = STRING)
-                                ),
-                                language = KOTLIN
-                        )
-                )),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "lastName", type = STRING)
-                        ),
-                        language = KOTLIN
-                ),
-                nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = "nameX", targetParameterName = "lastName")),
-                conversionFunctions = emptyList()
-        )
-
-        res.mappings.size shouldBe 0
+        shouldThrow<KewtException> {
+            calculateMappings(
+                    sources = listOf(ResolvedParameter(
+                            name = "person",
+                            resolvedType = ResolvedType(
+                                    type = Type(packageName = "com.person.hub", name = "Person"),
+                                    properties = setOf(
+                                            Parameter(name = "name", type = STRING)
+                                    ),
+                                    language = KOTLIN
+                            )
+                    )),
+                    target = ResolvedType(
+                            type = Type(packageName = "com.employee.hub", name = "Employee"),
+                            properties = setOf(
+                                    Parameter(name = "lastName", type = STRING)
+                            ),
+                            language = KOTLIN
+                    ),
+                    nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = "nameX", targetParameterName = "lastName")),
+                    conversionFunctions = emptyList()
+            )
+        }.message shouldContain "Not existing sources"
     }
 
     @Test
@@ -530,7 +530,7 @@ class MappingProcessorTest {
 
         with(res) {
             mappings.size shouldBe 2
-            
+
             mappings shouldHaveAtLeastOne {
                 parameterName shouldBe "pet"
                 sourceProperty.name shouldBe "name"
@@ -580,7 +580,7 @@ class MappingProcessorTest {
 
         with(res) {
             mappings.size shouldBe 2
-            
+
             mappings shouldHaveAtLeastOne {
                 parameterName shouldBe "pet"
                 sourceProperty.name shouldBe "name"
@@ -596,7 +596,7 @@ class MappingProcessorTest {
 
 
     @Test
-    fun `ttt`() {
+    fun `solve if two sources have ambiguous name mapping but explicit mapping is present`() {
         val res = calculateMappings(
                 sources = listOf(
                         ResolvedParameter(
@@ -645,14 +645,48 @@ class MappingProcessorTest {
         }
     }
 
+    @Test
+    fun `use explicit function if there are more than one function is applicable`() {
+        val res = calculateMappings(
+                sources = listOf(
+                        ResolvedParameter(
+                                name = "person",
+                                resolvedType = ResolvedType(
+                                        type = Type(packageName = "com.person.hub", name = "Person"),
+                                        properties = setOf(Parameter(name = "id", type = STRING)),
+                                        language = KOTLIN
+                                )
+                        )
+                ),
+                target = ResolvedType(
+                        type = Type(packageName = "com.employee.hub", name = "Employee"),
+                        properties = setOf(Parameter(name = "id", type = INT)),
+                        language = KOTLIN
+                ),
+                nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = "id", targetParameterName = "id")),
+                conversionFunctions = listOf(
+                        ConversionFunction("f", Parameter("x", STRING), INT),
+                        ConversionFunction("g", Parameter("x", STRING), INT)
+                ),
+                explicitConverters = listOf(ExplicitConverter("id", "f"))
+        )
+        res.mappings.single().conversionContext!!.conversionFunction!!.name shouldBe "f"
+    }
 }
 
-fun calculateMappings(sources: List<ResolvedParameter>, target: ResolvedType, nameMappings: List<NameMapping>, conversionFunctions: List<ConversionFunction>) =
-        calculateMappings(ResolvedFunction(
+fun calculateMappings(
+        sources: List<ResolvedParameter>,
+        target: ResolvedType,
+        nameMappings: List<NameMapping>,
+        conversionFunctions: List<ConversionFunction>,
+        explicitConverters:List<ExplicitConverter> = emptyList()
+) =
+        calculateMappings(ReadyForMappingFunction(
                 name = "f",
                 parameters = sources,
                 returnType = target,
-                nameMappings = nameMappings
+                nameMappings = nameMappings,
+                explicitConverters = explicitConverters
         ),
                 conversionFunctions
         )
