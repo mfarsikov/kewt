@@ -31,6 +31,7 @@ annotation class Mapper
  *
  * @param source source property selector. May include property name; may have path to nested properties
  * @param target target property selector
+ * @param converter function name, used if there more than one function with the same input and output types
  */
 @Repeatable
 @Target(AnnotationTarget.FUNCTION)
@@ -43,6 +44,7 @@ annotation class Mapping(
 /**
  * Is used on abstract methods as a wrapper for array of Mapping annotations.
  * Most probably will be removed when Kotlin will support repeatable annotations.
+ * @param value array of explicit mappings
  */
 @Target(AnnotationTarget.FUNCTION)
 annotation class Mappings(

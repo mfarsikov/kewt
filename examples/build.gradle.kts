@@ -18,10 +18,10 @@ java.sourceCompatibility = JavaVersion.VERSION_1_8
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation(project(":kewt-annotations"))
+    implementation(project(":kewt-map-annotations"))
     implementation(project(":examples-proto-lib"))
 
-    kapt(project(":kewt-processor"))
+    kapt(project(":kewt-map-processor"))
     kapt(project(":examples-proto-lib"))
 
     implementation("io.grpc:grpc-protobuf:1.26.0")

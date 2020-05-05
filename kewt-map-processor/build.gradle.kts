@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm")
     id("maven-publish")
     id("groovy")
+    id("com.jfrog.bintray")
 }
 
 repositories {
@@ -13,7 +14,7 @@ group = "com.github.mfarsikov"
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 dependencies {
-    implementation("com.github.mfarsikov:kewt-annotations:$version")
+    implementation("com.github.mfarsikov:kewt-map-annotations:$version")
     implementation("com.google.protobuf:protobuf-java:3.11.4")
     implementation("com.squareup:kotlinpoet:1.5.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -38,29 +39,72 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         jvmTarget = "1.8"
     }
 }
-task("generateVersionFile"){
+
+task("generateVersionFile") {
     val buildInfoFile = file("$buildDir/generated/resources/META-INF/build-info.properties")
     inputs.property("version", project.version)
     outputs.file(buildInfoFile)
-    doLast{
+    doLast {
         file(buildInfoFile.parent).mkdirs()
         buildInfoFile.writeText("version=${project.version}")
     }
 }
 
-tasks.withType<Jar>().named("jar"){
+tasks.withType<Jar>().named("jar") {
     dependsOn("generateVersionFile")
     from("$buildDir/generated/resources")
 }
 
 publishing {
     publications {
-        create<MavenPublication>("maven") {
+        create<MavenPublication>("bintray") {
             groupId = project.group as String
             artifactId = project.name
             version = project.version as String
 
             from(components["java"])
+
+            pom {
+                name.set("Kewt mapper")
+                description.set("Data class mapper for Kotlin")
+                url.set("https://github.com/mfarsikov/kewt")
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                    }
+                }
+                developers {
+                    developer {
+                        name.set("Max Farsikov")
+                        email.set("farsikovmax@gmail.com")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/mfarsikov/kewt.git")
+                    developerConnection.set("scm:git:ssh://github.com/mfarsikov/kewt.git")
+                    url.set("https://github.com/mfarsikov/kewt")
+                }
+            }
+
+        }
+    }
+}
+
+bintray {
+    user = System.getenv("BINTRAY_USER")
+    key = System.getenv("BINTRAY_KEY")
+    setPublications("bintray")
+    with(pkg) {
+        repo = "kewt-map"
+        name = "kewt-map-processor"
+        userOrg = System.getenv("BINTRAY_USER")
+        setLicenses("Apache-2.0")
+        vcsUrl = "https://github.com/mfarsikov/kewt"
+        with(version) {
+            name = project.version.toString()
+            desc = "Kotlin data class mapping annotations processor"
+            //released = yyyy-MM-dd'T'HH:mm:ss.SSSZZ
         }
     }
 }

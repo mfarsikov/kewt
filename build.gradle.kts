@@ -1,5 +1,6 @@
 plugins{
     kotlin("jvm") version "1.3.71"
+    id("com.jfrog.bintray") version "1.8.5"
 }
 
 repositories {
@@ -8,5 +9,5 @@ repositories {
 }
 
 allprojects {
-    version = "0.1.7"
+    version = "0.1.8"
 }

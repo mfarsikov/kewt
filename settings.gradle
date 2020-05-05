@@ -1,1 +1,1 @@
-include("kewt-processor", "kewt-annotations", "examples", "examples-proto-lib")
+include("kewt-map-processor", "kewt-map-annotations", "examples", "examples-proto-lib")
