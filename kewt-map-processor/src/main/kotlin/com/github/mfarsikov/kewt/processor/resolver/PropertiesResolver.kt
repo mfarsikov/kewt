@@ -8,8 +8,8 @@ import com.github.mfarsikov.kewt.processor.Parameter
 import com.github.mfarsikov.kewt.processor.Type
 import com.github.mfarsikov.kewt.processor.extractPackage
 import com.github.mfarsikov.kewt.processor.mapper.Language
-import com.github.mfarsikov.kewt.processor.mapper.ResolvedParameter
 import com.github.mfarsikov.kewt.processor.mapper.ResolvedType
+import com.github.mfarsikov.kewt.processor.mapper.Source
 import com.github.mfarsikov.kewt.processor.parser.kmClass
 import com.github.mfarsikov.kewt.processor.toType
 import com.google.protobuf.GeneratedMessageV3
@@ -19,40 +19,27 @@ import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.element.Element
 
 
-interface PropertiesResolver {
-    fun resolveTypes(returnType: Type, parameters: List<Parameter>, nameMappings: List<NameMapping>): Pair<ResolvedType, List<ResolvedParameter>>
-}
-
-class PropertiesResolverImpl(
+class PropertiesResolver(
         roundEnvironment: RoundEnvironment,
         private val processingEnv: ProcessingEnvironment
-) : PropertiesResolver {
-    private val cache: MutableMap<Type, ResolvedType> = mutableMapOf()
+) {
+    private val cache: MutableMap<Type, ResolvedType<Parameter>> = mutableMapOf()
 
     private val elementsByQualifiedName: Map<String, Element> = roundEnvironment.rootElements.associateBy {
         "${processingEnv.elementUtils.getPackageOf(it).qualifiedName}.${it.simpleName}"
     }
 
-    override fun resolveTypes(returnType: Type, parameters: List<Parameter>, nameMappings: List<NameMapping>): Pair<ResolvedType, List<ResolvedParameter>> {
-        val resolvedReturnType = resolveProperties(returnType)
+    fun nestedParameterProperties(nameMappings: List<NameMapping>, parameter: Parameter): List<Source> = nameMappings
+            .map { it.sourcePath }
+            .mapNotNull { sourcePath ->
+                findType(sourcePath, parameter.type)?.let { type ->
+                    Source(parameterName = parameter.name, path = sourcePath, type = type)
+                }
+            }
 
-        val resolvedParameters = parameters.map { parameter ->
-
-            val sourcePaths = nameMappings.filter { it.parameterName == parameter.name }.map { it.sourcePath }
-
-            val liftedProperties = sourcePaths.mapNotNull { source -> findType(source.split("."), parameter.type)?.let { Parameter(name = source, type = it) } }
-            val resolvedProperties = resolveProperties(parameter.type)
-
-            ResolvedParameter(
-                    name = parameter.name,
-                    resolvedType = resolvedProperties.copy(properties = resolvedProperties.properties + liftedProperties)
-            )
-        }
-        return Pair(resolvedReturnType, resolvedParameters)
-    }
 
     @Synchronized
-    private fun resolveProperties(type: Type): ResolvedType = cache.computeIfAbsent(type) {
+    fun resolveType(type: Type): ResolvedType<Parameter> = cache.computeIfAbsent(type) {
         Logger.trace("Resolving type: $type")
 
         val element = elementsByQualifiedName["${type.packageName}.${type.name}"]
@@ -84,7 +71,7 @@ class PropertiesResolverImpl(
                     val anotherProtoFields = getters.map { "${it.name}Bytes" }.toSet() +
                             getters.filter { it.name.endsWith("List") }.map { it.name.substringBefore("List") + "Count" } +
                             getters.map {
-                            val listSuffix = if(it.name.endsWith("List"))"List" else ""
+                                val listSuffix = if (it.name.endsWith("List")) "List" else ""
                                 val name = it.name.substringBeforeLast("List")
                                 "${name}OrBuilder${listSuffix}"
                             }
@@ -152,16 +139,16 @@ class PropertiesResolverImpl(
         throw KewtException("$type", ex)
     }
 
-    private fun findType(nestedSourceNames: List<String>, type: Type): Type? =
+    fun findType(nestedSourceNames: List<String>, type: Type): Type? =
             nestedSourceNames.fold(type) { typet: Type?, name ->
-                typet?.let { resolveProperties(typet) }
+                typet?.let { resolveType(typet) }
                         ?.properties
                         ?.singleOrNull { it.name == name }
                         ?.type
             }
 }
 
-private fun java.lang.reflect.Type.toType():Type =
+private fun java.lang.reflect.Type.toType(): Type =
         when (this) {
             is ParameterizedTypeImpl -> Type(
                     packageName = this.rawType.`package`.name,
@@ -169,7 +156,7 @@ private fun java.lang.reflect.Type.toType():Type =
                     nullability = Nullability.PLATFORM,
                     typeParameters = actualTypeArguments.map { it.toType() }
             )
-            else -> if(this.typeName == "com.google.protobuf.ProtocolStringList"){
+            else -> if (this.typeName == "com.google.protobuf.ProtocolStringList") {
                 Type(
                         packageName = "java.util",
                         name = "List",
@@ -182,10 +169,10 @@ private fun java.lang.reflect.Type.toType():Type =
                 )
             } else
                 Type(
-                    packageName = typeName.extractPackage(),
-                    name = typeName.substringAfterLast("."),
-                    nullability = Nullability.PLATFORM
-            )
+                        packageName = typeName.extractPackage(),
+                        name = typeName.substringAfterLast("."),
+                        nullability = Nullability.PLATFORM
+                )
         }
 
 

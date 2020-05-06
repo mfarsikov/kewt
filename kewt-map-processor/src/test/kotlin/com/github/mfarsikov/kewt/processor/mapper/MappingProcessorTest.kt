@@ -21,299 +21,150 @@ class MappingProcessorTest {
 
     @Test
     fun `map property by name and type`() {
-        val res = calculateMappings(
-                sources = listOf(ResolvedParameter(
-                        name = "person",
-                        resolvedType = ResolvedType(
-                                type = Type(packageName = "com.person.hub", name = "Person"),
-                                properties = setOf(
-                                        Parameter(name = "name", type = STRING)
-                                ),
-                                language = KOTLIN
-                        )
-                )),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "name", type = STRING)
-                        ),
-                        language = KOTLIN
-                ),
-                nameMappings = emptyList(),
-                conversionFunctions = emptyList()
+        val res = calculateMappings1(
+                sources = listOf(Source(parameterName = "person", path = listOf("name"), type = STRING)),
+                targets = listOf(Parameter(name = "name", type = STRING))
         )
 
-        res.mappings.size shouldBe 1
+        res.size shouldBe 1
 
-        with(res.mappings.first()) {
-            parameterName shouldBe "person"
-            sourceProperty.name shouldBe "name"
-            targetProperty.name shouldBe "name"
+        with(res.first()) {
+            source.parameterName shouldBe "person"
+            source.path.first() shouldBe "name"
+            target.name shouldBe "name"
         }
     }
 
     @Test
     fun `lift property`() {
-        val res = calculateMappings(
-                sources = listOf(ResolvedParameter(
-                        name = "person",
-                        resolvedType = ResolvedType(
-                                type = Type(packageName = "com.person.hub", name = "Person"),
-                                properties = setOf(
-                                        Parameter(name = "name.firstName", type = STRING)
-                                ),
-                                language = KOTLIN
-                        )
-                )),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "name", type = STRING)
-                        ),
-                        language = KOTLIN
+        val res = calculateMappings1(
+                sources = listOf(
+                        Source(parameterName = "person", path = listOf("name"), type = Type(packageName = "com.person.hub", name = "Name")),
+                        Source(parameterName = "person", path = listOf("name", "firstName"), type = STRING)
                 ),
-                nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = "name.firstName", targetParameterName = "name")),
-                conversionFunctions = emptyList()
+                targets = listOf(Parameter(name = "name", type = STRING)),
+                nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = listOf("name", "firstName"), targetParameterName = "name"))
         )
 
-        res.mappings.size shouldBe 1
+        res.size shouldBe 1
 
-        with(res.mappings.first()) {
-            parameterName shouldBe "person"
-            sourceProperty.name shouldBe "name.firstName"
-            targetProperty.name shouldBe "name"
+        with(res.first()) {
+            source.parameterName shouldBe "person"
+            source.path.joinToString(".") shouldBe "name.firstName"
+            target.name shouldBe "name"
         }
     }
 
     @Test
     fun `cannot map property if type is different`() {
         shouldThrow<KewtException> {
-            calculateMappings(
-                    sources = listOf(ResolvedParameter(
-                            name = "person",
-                            resolvedType = ResolvedType(
-                                    type = Type(packageName = "com.person.hub", name = "Person"),
-                                    properties = setOf(
-                                            Parameter(name = "name", type = Type("my", "String"))
-                                    ),
-                                    language = KOTLIN
-                            )
-                    )),
-                    target = ResolvedType(
-                            type = Type(packageName = "com.employee.hub", name = "Employee"),
-                            properties = setOf(
-                                    Parameter(name = "name", type = STRING)
-                            ),
-                            language = KOTLIN
+            calculateMappings1(
+                    sources = listOf(
+                            Source(parameterName = "person", path = listOf("name"), type = Type("my", "String"))
                     ),
-                    nameMappings = emptyList(),
-                    conversionFunctions = emptyList()
+                    targets = listOf(Parameter(name = "name", type = STRING ))
             )
         }
     }
 
     @Test
     fun `map property by with renaming`() {
-        val res = calculateMappings(
-                sources = listOf(ResolvedParameter(
-                        name = "person",
-                        resolvedType = ResolvedType(
-                                type = Type(packageName = "com.person.hub", name = "Person"),
-                                properties = setOf(
-                                        Parameter(name = "name", type = STRING)
-                                ),
-                                language = KOTLIN
-                        )
-                )),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "lastName", type = STRING)
-                        ),
-                        language = KOTLIN
+        val res = calculateMappings1(
+                sources = listOf(
+                        Source(parameterName = "person", path = listOf("name"),type = STRING )
                 ),
-                nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = "name", targetParameterName = "lastName")),
-                conversionFunctions = emptyList()
+                targets = listOf(Parameter(name = "lastName", type = STRING)),
+                nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = listOf( "name"), targetParameterName = "lastName"))
         )
 
-        res.mappings.size shouldBe 1
-        with(res.mappings.first()) {
-            parameterName shouldBe "person"
-            sourceProperty.name shouldBe "name"
-            targetProperty.name shouldBe "lastName"
+        res.size shouldBe 1
+        with(res.first()) {
+            source.parameterName shouldBe "person"
+            source.path.first() shouldBe "name"
+            target.name shouldBe "lastName"
         }
     }
 
     @Test
     fun `map by type if not ambiuous`() {
-        val res = calculateMappings(
-                sources = listOf(ResolvedParameter(
-                        name = "person",
-                        resolvedType = ResolvedType(
-                                type = Type(packageName = "com.person.hub", name = "Person"),
-                                properties = setOf(
-                                        Parameter(name = "name", type = STRING)
-                                ),
-                                language = KOTLIN
-                        )
-                )),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "lastName", type = STRING)
-                        ),
-                        language = KOTLIN
-                ),
-                nameMappings = emptyList(),
-                conversionFunctions = emptyList()
+        val res = calculateMappings1(
+                sources = listOf(Source(parameterName = "person", path = listOf("name"), type = STRING)),
+                targets = listOf( Parameter(name = "lastName", type = STRING))
         )
 
-        res.mappings.size shouldBe 1
+        res.size shouldBe 1
 
-        with(res.mappings.first()) {
-            parameterName shouldBe "person"
-            sourceProperty.name shouldBe "name"
-            targetProperty.name shouldBe "lastName"
+        with(res.first()) {
+            source.parameterName shouldBe "person"
+            source.path.first() shouldBe "name"
+            target.name shouldBe "lastName"
         }
     }
 
     @Test
     fun `cannot map by type if type is ambiguous`() {
         shouldThrow<AmbiguousMappingException> {
-            calculateMappings(
-                    sources = listOf(ResolvedParameter(
-                            name = "person",
-                            resolvedType = ResolvedType(
-                                    type = Type(packageName = "com.person.hub", name = "Person"),
-                                    properties = setOf(
-                                            Parameter(name = "name", type = STRING),
-                                            Parameter(name = "surname", type = STRING)
-                                    ),
-                                    language = KOTLIN
-                            )
-                    )),
-                    target = ResolvedType(
-                            type = Type(packageName = "com.employee.hub", name = "Employee"),
-                            properties = setOf(
-                                    Parameter(name = "firstName", type = STRING),
-                                    Parameter(name = "lastName", type = STRING)
-                            ),
-                            language = KOTLIN
+            calculateMappings1(
+                    sources = listOf(
+                            Source(parameterName = "person", path = listOf("name"), type = STRING),
+                            Source(parameterName = "person", path = listOf("surname"), type = STRING)
                     ),
-                    nameMappings = emptyList(),
-                    conversionFunctions = emptyList()
+                    targets = listOf(
+                            Parameter(name = "firstName", type = STRING),
+                            Parameter(name = "lastName", type = STRING)
+                    )
             )
         }
     }
 
     @Test
     fun `solve type ambiguity using name match`() {
-        val res = calculateMappings(
-                sources = listOf(ResolvedParameter(
-                        name = "person",
-                        resolvedType = ResolvedType(
-                                type = Type(packageName = "com.person.hub", name = "Person"),
-                                properties = setOf(
-                                        Parameter(name = "firstName", type = STRING),
-                                        Parameter(name = "surname", type = STRING)
-                                ),
-                                language = KOTLIN
-                        )
-                )),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "firstName", type = STRING),
-                                Parameter(name = "lastName", type = STRING)
-                        ),
-                        language = KOTLIN
+        val res = calculateMappings1(
+                sources = listOf(
+                        Source(parameterName = "person", path = listOf("firstName"), type = STRING),
+                        Source(parameterName = "person", path = listOf("surname"), type = STRING)
                 ),
-                nameMappings = emptyList(),
-                conversionFunctions = emptyList()
+                targets = listOf(
+                        Parameter(name = "firstName", type = STRING),
+                        Parameter(name = "lastName", type = STRING)
+                )
         )
-        res.mappings.size shouldBe 2
+        res.size shouldBe 2
 
 
-        res.mappings.any { it.sourceProperty.name == "firstName" && it.targetProperty.name == "firstName" } shouldBe true
-        res.mappings.any { it.sourceProperty.name == "surname" && it.targetProperty.name == "lastName" } shouldBe true
+        res.any { it.source.path.single() == "firstName" && it.target.name == "firstName" } shouldBe true
+        res.any { it.source.path.single() == "surname" && it.target.name == "lastName" } shouldBe true
     }
 
     @Test
     fun `map collections`() {
-        val res = calculateMappings(
-                sources = listOf(ResolvedParameter(
-                        name = "person",
-                        resolvedType = ResolvedType(
-                                type = Type(packageName = "com.person.hub", name = "Person"),
-                                properties = setOf(
-                                        Parameter(name = "keys", type = Type("kotlin.collections", "List", typeParameters = listOf(INT)))
-                                ),
-                                language = KOTLIN
-                        )
-                )),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "keys", type = Type("kotlin.collections", "List", typeParameters = listOf(INT)))
-                        ),
-                        language = KOTLIN
+        val res = calculateMappings1(
+                sources = listOf(
+                        Source(parameterName = "person", path = listOf("keys"), type = Type("kotlin.collections", "List", typeParameters = listOf(INT)))
                 ),
-                nameMappings = emptyList(),
-                conversionFunctions = emptyList()
+                targets = listOf(
+                        Parameter(name = "keys", type = Type("kotlin.collections", "List", typeParameters = listOf(INT)))
+                )
         )
 
-        res.mappings.size shouldBe 1
-
+        res.size shouldBe 1
     }
 
     @Test
     fun `do not map if collection's type parameters are different`() {
         shouldThrow<KewtException> {
-            calculateMappings(
-                    sources = listOf(ResolvedParameter(
-                            name = "person",
-                            resolvedType = ResolvedType(
-                                    type = Type(packageName = "com.person.hub", name = "Person"),
-                                    properties = setOf(
-                                            Parameter(name = "keys", type = Type("kotlin.collections", "List", typeParameters = listOf(STRING)))
-                                    ),
-                                    language = KOTLIN
-                            )
-                    )),
-                    target = ResolvedType(
-                            type = Type(packageName = "com.employee.hub", name = "Employee"),
-                            properties = setOf(
-                                    Parameter(name = "keys", type = Type("kotlin.collections", "List", typeParameters = listOf(INT)))
-                            ),
-                            language = KOTLIN
-                    ),
-                    nameMappings = emptyList(),
-                    conversionFunctions = emptyList()
+            calculateMappings1(
+                    sources = listOf(Source(parameterName = "peson", path = listOf("keys"), type = Type("kotlin.collections", "List", typeParameters = listOf(STRING)))),
+                    targets = listOf(Parameter(name = "keys", type = Type("kotlin.collections", "List", typeParameters = listOf(INT))))
             )
         }
     }
 
     @Test
     fun `map using name match and type conversion`() {
-        val res = calculateMappings(
-                sources = listOf(ResolvedParameter(
-                        name = "person",
-                        resolvedType = ResolvedType(
-                                type = Type(packageName = "com.person.hub", name = "Person"),
-                                properties = setOf(
-                                        Parameter(name = "id", type = INT)
-                                ),
-                                language = KOTLIN
-                        )
-                )),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "id", type = STRING)
-                        ),
-                        language = KOTLIN
-                ),
-                nameMappings = emptyList(),
+        val res = calculateMappings1(
+                sources = listOf(Source(parameterName = "person", path = listOf("id"), type = INT)),
+                targets = listOf(Parameter(name = "id", type = STRING)),
                 conversionFunctions = listOf(ConversionFunction(
                         name = "f",
                         parameter = Parameter("x", type = INT),
@@ -321,36 +172,20 @@ class MappingProcessorTest {
                 ))
         )
 
-        res.mappings.size shouldBe 1
+        res.size shouldBe 1
 
-        with(res.mappings.single()) {
-            sourceProperty.name shouldBe "id"
-            targetProperty.name shouldBe "id"
+        with(res.single()) {
+            source.path.first() shouldBe "id"
+            target.name shouldBe "id"
             conversionContext?.conversionFunction?.name shouldBe "f"
         }
     }
 
     @Test
     fun `map using type conversion`() {
-        val res = calculateMappings(
-                sources = listOf(ResolvedParameter(
-                        name = "person",
-                        resolvedType = ResolvedType(
-                                type = Type(packageName = "com.person.hub", name = "Person"),
-                                properties = setOf(
-                                        Parameter(name = "id", type = INT)
-                                ),
-                                language = KOTLIN
-                        )
-                )),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "uuid", type = STRING)
-                        ),
-                        language = KOTLIN
-                ),
-                nameMappings = emptyList(),
+        val res = calculateMappings1(
+                sources = listOf(Source(parameterName = "person", path = listOf("id"), type = INT)),
+                targets = listOf(Parameter(name = "uuid", type = STRING)),
                 conversionFunctions = listOf(ConversionFunction(
                         name = "f",
                         parameter = Parameter("x", type = INT),
@@ -358,37 +193,24 @@ class MappingProcessorTest {
                 ))
         )
 
-        res.mappings.size shouldBe 1
+        res.size shouldBe 1
 
-        with(res.mappings.single()) {
-            sourceProperty.name shouldBe "id"
-            targetProperty.name shouldBe "uuid"
+        with(res.single()) {
+            source.path.first() shouldBe "id"
+            target.name shouldBe "uuid"
             conversionContext?.conversionFunction?.name shouldBe "f"
         }
     }
 
     @Test
     fun `map collection elements using type conversion`() {
-        val res = calculateMappings(
-                sources = listOf(ResolvedParameter(
-                        name = "person",
-                        resolvedType = ResolvedType(
-                                type = Type(packageName = "com.person.hub", name = "Person"),
-                                properties = setOf(
-                                        Parameter(name = "ids", type = Type("kotlin.collections", "List", typeParameters = listOf(INT)))
-                                ),
-                                language = KOTLIN
-                        )
-                )),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "ids", type = Type("kotlin.collections", "List", typeParameters = listOf(STRING)))
-
-                        ),
-                        language = KOTLIN
+        val res = calculateMappings1(
+                sources = listOf(
+                        Source(parameterName = "person", path = listOf("ids"), type = Type("kotlin.collections", "List", typeParameters = listOf(INT)))
                 ),
-                nameMappings = emptyList(),
+                targets = listOf(
+                        Parameter(name = "ids", type = Type("kotlin.collections", "List", typeParameters = listOf(STRING)))
+                ),
                 conversionFunctions = listOf(ConversionFunction(
                         name = "f",
                         parameter = Parameter("x", type = INT),
@@ -396,11 +218,11 @@ class MappingProcessorTest {
                 ))
         )
 
-        res.mappings.size shouldBe 1
+        res.size shouldBe 1
 
-        with(res.mappings.single()) {
-            sourceProperty.name shouldBe "ids"
-            targetProperty.name shouldBe "ids"
+        with(res.single()) {
+            source.path.first() shouldBe "ids"
+            target.name shouldBe "ids"
             conversionContext?.conversionFunction?.name shouldBe "f"
             conversionContext?.usingElementMapping shouldBe true
         }
@@ -408,45 +230,33 @@ class MappingProcessorTest {
 
     @Test
     fun `property mapping could contain parameter name`() {
-        val res = calculateMappings(
-                sources = listOf(ResolvedParameter(
-                        name = "person",
-                        resolvedType = ResolvedType(
-                                type = Type(packageName = "com.person.hub", name = "Person"),
-                                properties = setOf(
-                                        Parameter(name = "name", type = STRING),
-                                        Parameter(name = "surname", type = STRING)
-                                ),
-                                language = KOTLIN
-                        )
-                )),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "lastName", type = STRING),
-                                Parameter(name = "firstName", type = STRING)
-                        ),
-                        language = KOTLIN
+        val res = calculateMappings1(
+                sources = listOf(
+                        Source(parameterName = "person", path = listOf("name"), type = STRING),
+                        Source(parameterName = "person", path = listOf("surname"), type = STRING)
+                ),
+                targets = listOf(
+                        Parameter(name = "lastName", type = STRING),
+                        Parameter(name = "firstName", type = STRING)
                 ),
                 nameMappings = listOf(
-                        NameMapping(parameterName = "person", sourcePath = "name", targetParameterName = "firstName"),
-                        NameMapping(parameterName = "person", sourcePath = "surname", targetParameterName = "lastName")
-                ),
-                conversionFunctions = emptyList()
+                        NameMapping(parameterName = "person", sourcePath = listOf("name"), targetParameterName = "firstName"),
+                        NameMapping(parameterName = "person", sourcePath = listOf("surname"), targetParameterName = "lastName")
+                )
         )
 
         with(res) {
-            mappings.size shouldBe 2
+            size shouldBe 2
 
-            mappings shouldHaveAtLeastOne {
-                parameterName shouldBe "person"
-                sourceProperty.name shouldBe "name"
-                targetProperty.name shouldBe "firstName"
+            this shouldHaveAtLeastOne {
+                source.parameterName shouldBe "person"
+                source.path.first() shouldBe "name"
+                target.name shouldBe "firstName"
             }
-            mappings shouldHaveAtLeastOne {
-                parameterName shouldBe "person"
-                sourceProperty.name shouldBe "surname"
-                targetProperty.name shouldBe "lastName"
+            this shouldHaveAtLeastOne {
+                source.parameterName shouldBe "person"
+                source.path.first() shouldBe "surname"
+                target.name shouldBe "lastName"
             }
         }
     }
@@ -468,78 +278,45 @@ class MappingProcessorTest {
     @Test
     fun `fail if explicitly mapped property does not exist`() {
         shouldThrow<KewtException> {
-            calculateMappings(
-                    sources = listOf(ResolvedParameter(
-                            name = "person",
-                            resolvedType = ResolvedType(
-                                    type = Type(packageName = "com.person.hub", name = "Person"),
-                                    properties = setOf(
-                                            Parameter(name = "name", type = STRING)
-                                    ),
-                                    language = KOTLIN
-                            )
-                    )),
-                    target = ResolvedType(
-                            type = Type(packageName = "com.employee.hub", name = "Employee"),
-                            properties = setOf(
-                                    Parameter(name = "lastName", type = STRING)
-                            ),
-                            language = KOTLIN
+            calculateMappings1(
+                    sources = listOf(
+                            Source(parameterName = "person", path = listOf("name"), type = STRING)
                     ),
-                    nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = "nameX", targetParameterName = "lastName")),
-                    conversionFunctions = emptyList()
+                    targets = listOf(Parameter(name = "lastName", type = STRING)),
+                    nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = listOf("nameX"), targetParameterName = "lastName"))
             )
-        }.message shouldContain "Not existing sources"
+        }.message shouldContain "Not existing source"
     }
 
     @Test
     fun `merge two sources`() {
-        val res = calculateMappings(
+        val res = calculateMappings1(
                 sources = listOf(
-                        ResolvedParameter(
-                                name = "person",
-                                resolvedType = ResolvedType(
-                                        type = Type(packageName = "com.person.hub", name = "Person"),
-                                        properties = setOf(Parameter(name = "name", type = STRING)),
-                                        language = KOTLIN
-                                )
-                        ),
-                        ResolvedParameter(
-                                name = "pet",
-                                resolvedType = ResolvedType(
-                                        type = Type(packageName = "com.person.hub", name = "Pet"),
-                                        properties = setOf(Parameter(name = "name", type = STRING)),
-                                        language = KOTLIN
-                                )
-                        )
+                        Source(parameterName = "person", path = listOf("name"), type = STRING),
+                        Source(parameterName = "pet", path = listOf("name"), type = STRING)
                 ),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "name", type = STRING),
-                                Parameter(name = "petName", type = STRING)
-                        ),
-                        language = KOTLIN
+                targets = listOf(
+                        Parameter(name = "name", type = STRING),
+                        Parameter(name = "petName", type = STRING)
                 ),
                 nameMappings = listOf(
-                        NameMapping(parameterName = "pet", sourcePath = "name", targetParameterName = "petName"),
-                        NameMapping(parameterName = "person", sourcePath = "name", targetParameterName = "name")
-                ),
-                conversionFunctions = listOf()
+                        NameMapping(parameterName = "pet", sourcePath = listOf("name"), targetParameterName = "petName"),
+                        NameMapping(parameterName = "person", sourcePath = listOf("name"), targetParameterName = "name")
+                )
         )
 
         with(res) {
-            mappings.size shouldBe 2
+            size shouldBe 2
 
-            mappings shouldHaveAtLeastOne {
-                parameterName shouldBe "pet"
-                sourceProperty.name shouldBe "name"
-                targetProperty.name shouldBe "petName"
+            this shouldHaveAtLeastOne {
+                source.parameterName shouldBe "pet"
+                source.path.first() shouldBe "name"
+                target.name shouldBe "petName"
             }
-            mappings shouldHaveAtLeastOne {
-                parameterName shouldBe "person"
-                sourceProperty.name shouldBe "name"
-                targetProperty.name shouldBe "name"
+            this shouldHaveAtLeastOne {
+                source.parameterName shouldBe "person"
+                source.path.first() shouldBe "name"
+                target.name shouldBe "name"
             }
         }
     }
@@ -547,49 +324,30 @@ class MappingProcessorTest {
 
     @Test
     fun `merge two sources, infer implicit matching`() {
-        val res = calculateMappings(
+        val res = calculateMappings1(
                 sources = listOf(
-                        ResolvedParameter(
-                                name = "person",
-                                resolvedType = ResolvedType(
-                                        type = Type(packageName = "com.person.hub", name = "Person"),
-                                        properties = setOf(Parameter(name = "name", type = STRING)),
-                                        language = KOTLIN
-                                )
-                        ),
-                        ResolvedParameter(
-                                name = "pet",
-                                resolvedType = ResolvedType(
-                                        type = Type(packageName = "com.person.hub", name = "Pet"),
-                                        properties = setOf(Parameter(name = "name", type = STRING)),
-                                        language = KOTLIN
-                                )
-                        )
+                        Source(parameterName = "person", path = listOf("name"), type = STRING),
+                        Source(parameterName = "pet", path = listOf("name"), type = STRING)
                 ),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "name", type = STRING),
-                                Parameter(name = "petName", type = STRING)
-                        ),
-                        language = KOTLIN
+                targets = listOf(
+                        Parameter(name = "name", type = STRING),
+                        Parameter(name = "petName", type = STRING)
                 ),
-                nameMappings = listOf(NameMapping(parameterName = "pet", sourcePath = "name", targetParameterName = "petName")),
-                conversionFunctions = listOf()
+                nameMappings = listOf(NameMapping(parameterName = "pet", sourcePath = listOf("name"), targetParameterName = "petName"))
         )
 
         with(res) {
-            mappings.size shouldBe 2
+            size shouldBe 2
 
-            mappings shouldHaveAtLeastOne {
-                parameterName shouldBe "pet"
-                sourceProperty.name shouldBe "name"
-                targetProperty.name shouldBe "petName"
+            this shouldHaveAtLeastOne {
+                source.parameterName shouldBe "pet"
+                source.path.first() shouldBe "name"
+                target.name shouldBe "petName"
             }
-            mappings shouldHaveAtLeastOne {
-                parameterName shouldBe "person"
-                sourceProperty.name shouldBe "name"
-                targetProperty.name shouldBe "name"
+            this shouldHaveAtLeastOne {
+                source.parameterName shouldBe "person"
+                source.path.first() shouldBe "name"
+                target.name shouldBe "name"
             }
         }
     }
@@ -597,96 +355,65 @@ class MappingProcessorTest {
 
     @Test
     fun `solve if two sources have ambiguous name mapping but explicit mapping is present`() {
-        val res = calculateMappings(
+        val res = calculateMappings1(
                 sources = listOf(
-                        ResolvedParameter(
-                                name = "person",
-                                resolvedType = ResolvedType(
-                                        type = Type(packageName = "com.person.hub", name = "Person"),
-                                        properties = setOf(Parameter(name = "name", type = STRING)),
-                                        language = KOTLIN
-
-                                )
-                        ),
-                        ResolvedParameter(
-                                name = "pet",
-                                resolvedType = ResolvedType(
-                                        type = Type(packageName = "com.person.hub", name = "Pet"),
-                                        properties = setOf(Parameter(name = "name", type = STRING)),
-                                        language = KOTLIN
-                                )
-                        )
+                        Source(parameterName = "person", path = listOf("name"), type = STRING),
+                        Source(parameterName = "pet", path = listOf("name"), type = STRING)
                 ),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(
-                                Parameter(name = "name", type = STRING),
-                                Parameter(name = "petName", type = STRING)
-                        ),
-                        language = KOTLIN
-
+                targets = listOf(
+                        Parameter(name = "name", type = STRING),
+                        Parameter(name = "petName", type = STRING)
                 ),
-                nameMappings = listOf(NameMapping(parameterName = "pet", sourcePath = "name", targetParameterName = "petName")),
-                conversionFunctions = listOf()
+                nameMappings = listOf(NameMapping(parameterName = "pet", sourcePath = listOf("name"), targetParameterName = "petName"))
         )
 
         with(res) {
-            mappings.size shouldBe 2
-            mappings shouldHaveAtLeastOne {
-                parameterName shouldBe "pet"
-                sourceProperty.name shouldBe "name"
-                targetProperty.name shouldBe "petName"
+            size shouldBe 2
+            this shouldHaveAtLeastOne {
+                source.parameterName shouldBe "pet"
+                source.path.first() shouldBe "name"
+                target.name shouldBe "petName"
             }
-            mappings shouldHaveAtLeastOne {
-                parameterName shouldBe "person"
-                sourceProperty.name shouldBe "name"
-                targetProperty.name shouldBe "name"
+            this shouldHaveAtLeastOne {
+                source.parameterName shouldBe "person"
+                source.path.first() shouldBe "name"
+                target.name shouldBe "name"
             }
         }
     }
 
     @Test
     fun `use explicit function if there are more than one function is applicable`() {
-        val res = calculateMappings(
+        val res = calculateMappings1(
                 sources = listOf(
-                        ResolvedParameter(
-                                name = "person",
-                                resolvedType = ResolvedType(
-                                        type = Type(packageName = "com.person.hub", name = "Person"),
-                                        properties = setOf(Parameter(name = "id", type = STRING)),
-                                        language = KOTLIN
-                                )
-                        )
+                        Source(parameterName = "person", path = listOf("id"), type = STRING)
                 ),
-                target = ResolvedType(
-                        type = Type(packageName = "com.employee.hub", name = "Employee"),
-                        properties = setOf(Parameter(name = "id", type = INT)),
-                        language = KOTLIN
+                targets = listOf(
+                        Parameter(name = "id", type = INT)
                 ),
-                nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = "id", targetParameterName = "id")),
+                nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = listOf("id"), targetParameterName = "id")),
                 conversionFunctions = listOf(
                         ConversionFunction("f", Parameter("x", STRING), INT),
                         ConversionFunction("g", Parameter("x", STRING), INT)
                 ),
                 explicitConverters = listOf(ExplicitConverter("id", "f"))
         )
-        res.mappings.single().conversionContext!!.conversionFunction!!.name shouldBe "f"
+        res.single().conversionContext!!.conversionFunction!!.name shouldBe "f"
     }
 }
 
-fun calculateMappings(
-        sources: List<ResolvedParameter>,
-        target: ResolvedType,
-        nameMappings: List<NameMapping>,
-        conversionFunctions: List<ConversionFunction>,
-        explicitConverters:List<ExplicitConverter> = emptyList()
-) =
-        calculateMappings(ReadyForMappingFunction(
-                name = "f",
-                parameters = sources,
-                returnType = target,
-                nameMappings = nameMappings,
-                explicitConverters = explicitConverters
-        ),
-                conversionFunctions
-        )
+fun calculateMappings1(
+        sources: List<Source>,
+        targets: List<Parameter>,
+        nameMappings: List<NameMapping> = emptyList(),
+        conversionFunctions: List<ConversionFunction> = emptyList(),
+        explicitConverters: List<ExplicitConverter> = emptyList()
+): List<PropertyMapping> {
+    return calculateMappings(
+            nameMappings = nameMappings,
+            explicitConverters = explicitConverters,
+            conversionFunctions = conversionFunctions,
+            sources = sources,
+            targets = targets.toSet()
+    )
+}

@@ -2,14 +2,17 @@ package com.github.mfarsikov.kewt.processor
 
 import com.github.mfarsikov.kewt.annotations.Mapper
 import com.github.mfarsikov.kewt.processor.mapper.AnnotationConfig
-import com.github.mfarsikov.kewt.processor.mapper.ReadyForMappingFunction
+import com.github.mfarsikov.kewt.processor.mapper.PropertyMapping
+import com.github.mfarsikov.kewt.processor.mapper.ResolvedParameter
+import com.github.mfarsikov.kewt.processor.mapper.ResolvedType
+import com.github.mfarsikov.kewt.processor.mapper.Source
 import com.github.mfarsikov.kewt.processor.mapper.calculateMappings
 import com.github.mfarsikov.kewt.processor.parser.parse
 import com.github.mfarsikov.kewt.processor.render.RenderConverterClass
 import com.github.mfarsikov.kewt.processor.render.RenderConverterFunction
 import com.github.mfarsikov.kewt.processor.render.RenderPropertyMappings
 import com.github.mfarsikov.kewt.processor.render.render
-import com.github.mfarsikov.kewt.processor.resolver.PropertiesResolverImpl
+import com.github.mfarsikov.kewt.processor.resolver.PropertiesResolver
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import javax.annotation.processing.AbstractProcessor
@@ -53,7 +56,7 @@ class KewtMapperProcessor : AbstractProcessor() {
         Logger.info("Start processing @Mapper annotations")
 
         try {
-            val propertiesResolver = PropertiesResolverImpl(roundEnv, processingEnv)
+            val propertiesResolver = PropertiesResolver(roundEnv, processingEnv)
 
 
             roundEnv.getElementsAnnotatedWith(Mapper::class.java).forEach { element ->
@@ -92,10 +95,46 @@ class KewtMapperProcessor : AbstractProcessor() {
                             .map { parsedFunction ->
 
                                 Logger.debug("Abstract function: $parsedFunction")
-                                val resolvedFunction = normalizeNamesAndResolveTypes(parsedFunction, propertiesResolver)
-                                Logger.debug("Explicit mappings: ${resolvedFunction.nameMappings}")
+                                val nameMappings = normalizeNames(parsedFunction.parameters, parsedFunction.annotationConfigs)
 
-                                calculateMappings(function = resolvedFunction, conversionFunctions = conversionFunctions)
+
+                                val resolvedSources = parsedFunction.parameters.map { parameter ->
+
+                                    val ms = nameMappings.filter { it.parameterName == parameter.name }
+
+                                    val nestedSources = propertiesResolver.nestedParameterProperties(ms, parameter)
+
+                                    val resolveType = propertiesResolver.resolveType(parameter.type)
+
+                                    val rt = resolveType
+                                            .mapParameter { p -> Source(parameterName = parameter.name, path = listOf(p.name), type = p.type) }
+                                            .let {
+                                                it.copy(properties = it.properties + nestedSources)
+                                            }
+
+                                    ResolvedParameter(parameter.name, rt)
+                                }
+
+                                val resolvedReturnType = propertiesResolver.resolveType(parsedFunction.returnType)
+
+                                val sources = resolvedSources.flatMap { it.resolvedType.properties }
+
+                                val mappings = calculateMappings(
+                                        sources = sources,
+                                        targets = resolvedReturnType.properties,
+                                        nameMappings = nameMappings,
+                                        explicitConverters = parsedFunction.annotationConfigs
+                                                .filter { it.converter != null }
+                                                .map { ExplicitConverter(targetName = it.target, converterName = it.converter!!) },
+                                        conversionFunctions = conversionFunctions
+                                )
+
+                                MappedFunction(
+                                        name = parsedFunction.name,
+                                        parameters = resolvedSources,
+                                        returnType = resolvedReturnType,
+                                        mappings = mappings
+                                )
                             }
 
                     val text = render(
@@ -114,9 +153,9 @@ class KewtMapperProcessor : AbstractProcessor() {
                                                 returnType = it.returnType.type,
                                                 mappings = it.mappings.map {
                                                     RenderPropertyMappings(
-                                                            parameterName = it.parameterName,
-                                                            sourcePropertyName = it.sourceProperty.name,
-                                                            targetPropertyName = it.targetProperty.name,
+                                                            parameterName = it.source.parameterName,
+                                                            sourcePropertyName = it.source.path.joinToString("."),//TODO should parser see path as array? for null-safe calls?
+                                                            targetPropertyName = it.target.name,
                                                             conversionContext = it.conversionContext!!
                                                     )
                                                 }
@@ -144,22 +183,6 @@ class KewtMapperProcessor : AbstractProcessor() {
         return false
     }
 
-    private fun normalizeNamesAndResolveTypes(parsedFunction: Function, propertiesResolver: PropertiesResolverImpl): ReadyForMappingFunction {
-        val nameMappings = normalizeNames(parsedFunction.parameters, parsedFunction.annotationConfigs)
-
-        val (resolvedReturnType, resolvedParameters) = propertiesResolver.resolveTypes(parsedFunction.returnType, parsedFunction.parameters, nameMappings)
-
-        return ReadyForMappingFunction(
-                name = parsedFunction.name,
-                parameters = resolvedParameters,
-                returnType = resolvedReturnType,
-                nameMappings = nameMappings,
-                explicitConverters = parsedFunction.annotationConfigs
-                        .filter { it.converter != null }
-                        .map { ExplicitConverter(targetName = it.target, converterName = it.converter!!) }
-        )
-    }
-
     private fun normalizeNames(
             sources: List<Parameter>,
             annotationConfigs: List<AnnotationConfig>
@@ -171,14 +194,17 @@ class KewtMapperProcessor : AbstractProcessor() {
             }.map {
                 NameMapping(
                         parameterName = it.source.split(".").first(),
-                        sourcePath = it.source.substringAfter("."),
+                        sourcePath = it.source.substringAfter(".").split("."),
                         targetParameterName = it.target
                 )
             }
-
-
 }
-
+data class MappedFunction(
+        val name: String,
+        val parameters: List<ResolvedParameter<Source>>,
+        val returnType: ResolvedType<Parameter>,
+        val mappings: List<PropertyMapping>
+)
 data class ExplicitConverter(
         val targetName: String,
         val converterName: String
@@ -186,10 +212,10 @@ data class ExplicitConverter(
 
 data class NameMapping(
         val parameterName: String,
-        val sourcePath: String,
+        val sourcePath: List<String>,
         val targetParameterName: String
 ) {
-    override fun toString() = "$targetParameterName <= $parameterName.$sourcePath"
+    override fun toString() = "$targetParameterName <= ${(listOf(parameterName)+sourcePath).joinToString(".")}"
 }
 
 data class ConversionFunction(
