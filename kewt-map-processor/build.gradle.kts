@@ -55,6 +55,10 @@ tasks.withType<Jar>().named("jar") {
     from("$buildDir/generated/resources")
 }
 
+java {
+    withSourcesJar()
+}
+
 publishing {
     publications {
         create<MavenPublication>("bintray") {
