@@ -7,6 +7,8 @@
 * Support Sets element mappings
   * against: if projection function is surjective, result set will lose elements
     * introduce annotation `@Injective`?
+* updates in PATCH mode (using copy method and using non-nullable source values)
+  * allow mutations using setters? 
 
 ## Nice to have
 * Preserve annotations in generated classes

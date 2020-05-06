@@ -3,7 +3,6 @@
 inspired by [Mapstruct](https://mapstruct.org/)
 
 ## Quick start
-`./gradlew publishToMavenLocal`
 
 `build.gradle.kts`:
 ```kotlin
@@ -11,11 +10,11 @@ plugins {
     kotlin("kapt") version "1.3.71" //kotlinVersion
 }
 repositories {
-    mavenLocal()
+    jcenter()
 }
 dependencies {
-    implementation("com.github.mfarsikov:kewt-annotations:0.1.6-SNAPSHOT")
-    kapt("com.github.mfarsikov:kewt-processor:0.1.6-SNAPSHOT")
+    implementation("com.github.mfarsikov:kewt-annotations:0.1.9")
+    kapt("com.github.mfarsikov:kewt-map-processor:0.1.9")
 }
 ```
 
