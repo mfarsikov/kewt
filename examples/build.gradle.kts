@@ -4,7 +4,6 @@ plugins {
     kotlin("jvm")
     kotlin("kapt")
     idea
- //   id("io.wusa.semver-git-plugin").version("2.0.2")
 }
 
 repositories {
@@ -44,21 +43,8 @@ tasks.withType<KotlinCompile> {
 
 kapt {
     arguments {
-        //arg("kewt.log.level", "trace")
-         //  arg("kewt.whitelist", "com.github.mfarsikov.kewt.example.ex12")
-        //   arg("kewt.blacklist", "com.github.mfarsikov.kewt.example.proto")
+//        arg("kewt.log.level", "trace")
+//        arg("kewt.whitelist", "com.github.mfarsikov.kewt.example.ex15")
+//        arg("kewt.blacklist", "com.github.mfarsikov.kewt.example.proto")
     }
 }
-
-//semver {
-//    // snapshotSuffix = "SNAPSHOT" (default) appended if the commit is without a release tag
-//    dirtyMarker = "dirty" //(default) appended if the are uncommitted changes
-//    //   initialVersion = "0.1.0" (default) initial version in semantic versioning
-//    branches {
-//        branch {
-//            regex = "master"
-//            incrementer = "NO_VERSION_INCREMENTER" //(default) version incrementer
-//            formatter = Transformer { "${semver.info.version.major}.${semver.info.version.minor}.${semver.info.version.patch}" }
-//        }
-//    }
-//}

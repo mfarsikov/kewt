@@ -1,8 +1,5 @@
 # Plan
 ## Mandatory
-* Map target field from function parameter 
-  * parameter with default value could solve problem with constant values
-  * Allow converter functions to use whole object
 * Allow implicitly ignore properties with default values
 * Support Sets element mappings
   * against: if projection function is surjective, result set will lose elements

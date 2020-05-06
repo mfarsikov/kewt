@@ -117,7 +117,8 @@ class KewtMapperProcessor : AbstractProcessor() {
 
                                 val resolvedReturnType = propertiesResolver.resolveType(parsedFunction.returnType)
 
-                                val sources = resolvedSources.flatMap { it.resolvedType.properties }
+                                val sources = resolvedSources.flatMap { it.resolvedType.properties } +
+                                        parsedFunction.parameters.map { Source(it.name, path = emptyList(), type = it.type) }
 
                                 val mappings = calculateMappings(
                                         sources = sources,
@@ -171,7 +172,7 @@ class KewtMapperProcessor : AbstractProcessor() {
 
                     file.openWriter().use { it.write(text) }
                 } catch (ex: KewtException) {
-                    Logger.error("Cannot process ${element.simpleName}: ${ex.message}")
+                    Logger.error(ex,"Cannot process ${element.simpleName}: ${ex.message}")
                 }
             }
             Logger.info("Finished processing @Mapper annotations")

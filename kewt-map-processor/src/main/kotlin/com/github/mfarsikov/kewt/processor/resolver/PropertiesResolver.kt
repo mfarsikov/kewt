@@ -23,7 +23,7 @@ class PropertiesResolver(
         roundEnvironment: RoundEnvironment,
         private val processingEnv: ProcessingEnvironment
 ) {
-    private val cache: MutableMap<Type, ResolvedType<Parameter>> = mutableMapOf()
+    private val cache: MutableMap<String, ResolvedType<Parameter>> = mutableMapOf(*types)
 
     private val elementsByQualifiedName: Map<String, Element> = roundEnvironment.rootElements.associateBy {
         "${processingEnv.elementUtils.getPackageOf(it).qualifiedName}.${it.simpleName}"
@@ -39,7 +39,7 @@ class PropertiesResolver(
 
 
     @Synchronized
-    fun resolveType(type: Type): ResolvedType<Parameter> = cache.computeIfAbsent(type) {
+    fun resolveType(type: Type): ResolvedType<Parameter> = cache.computeIfAbsent(type.qualifiedName()) {
         Logger.trace("Resolving type: $type")
 
         val element = elementsByQualifiedName["${type.packageName}.${type.name}"]
@@ -184,3 +184,20 @@ private fun <T> Class<T>.toType() = Type(
 )
 
 private fun String.convertFromGetter() = substringAfter("get").decapitalize()
+private val cache: MutableMap<Type, ResolvedType<Parameter>> = mutableMapOf()
+
+val types = listOf(//TODO check could it be skipped
+        Type("kotlin", "String"),
+        Type("kotlin", "Long"),
+        Type("kotlin", "Int"),
+        Type("kotlin", "Double"),
+        Type("kotlin", "Float"),
+        Type("kotlin", "Boolean"),
+        Type("java.util", "UUID")
+).map { ResolvedType<Parameter>(
+        type = it,
+        properties = emptySet(),
+        language = Language.KOTLIN
+) }
+        .map { it.type.qualifiedName() to it }
+        .toTypedArray()

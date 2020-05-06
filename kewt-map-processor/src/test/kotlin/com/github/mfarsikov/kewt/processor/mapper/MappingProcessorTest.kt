@@ -400,6 +400,24 @@ class MappingProcessorTest {
         )
         res.single().conversionContext!!.conversionFunction!!.name shouldBe "f"
     }
+    @Test
+    fun `map from parameter`() {
+        val res = calculateMappings1(
+                sources = listOf(
+                        Source(parameterName = "person", path = listOf("name"), type = STRING),
+                        Source(parameterName = "age", path = listOf(), type = INT)
+                ),
+                targets = listOf(
+                        Parameter(name = "name", type = STRING),
+                        Parameter(name = "age", type = INT)
+                )
+        )
+        res shouldHaveAtLeastOne {
+            source.parameterName shouldBe "age"
+            source.path shouldBe emptyList()
+            target.name shouldBe "age"
+        }
+    }
 }
 
 fun calculateMappings1(

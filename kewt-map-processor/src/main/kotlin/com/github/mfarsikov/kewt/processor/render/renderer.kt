@@ -96,7 +96,7 @@ fun generateKotlinConstructorCall(type: Type, mappings: List<RenderPropertyMappi
 
     codeBuilder.add(mappings.map {
 
-        val sourceExtraction = "${it.parameterName}.${it.sourcePropertyName}"
+        val sourceExtraction = listOf(it.parameterName, it.sourcePropertyName).filter { it.isNotBlank() }.joinToString(".")
 
         val rightPart = when {
             it.conversionContext.usingElementMapping -> "$sourceExtraction.map { ${it.conversionContext.conversionFunction!!.name}(it) }"

@@ -67,9 +67,10 @@ fun calculateMappings(
     val targets = targets.filter { it !in explicitlyMappedTargets }
     val sources = sources.filter { it !in explicityMappedSources }
 
+    sources.filter { it.path.size > 1 }.takeIf { it.isNotEmpty() }?.let { throw KewtException("not matched lifted property: $it") }
 
     val matchedByName = targets.mapNotNull { targetProperty ->
-        val sourcesWithSameName = sources.filter { it.path.single() == targetProperty.name }
+        val sourcesWithSameName = sources.filter { it.path.firstOrNull() ?: it.parameterName == targetProperty.name }
         val matchedByName = sourcesWithSameName.mapNotNull { sourceProperty ->
             typeMatcher.findConversion(sourceProperty.type, targetProperty.type)?.let {
                 PropertyMapping(
@@ -130,7 +131,7 @@ private fun explicitMapping(
 ): PropertyMapping {
     val sourceParameter = sources.filter { it.parameterName == explicitNameMapping.parameterName }
 
-            if (sourceParameter.isEmpty()) throw KewtException("not found parameter with name: ${explicitNameMapping.parameterName}")
+    if (sourceParameter.isEmpty()) throw KewtException("not found parameter with name: ${explicitNameMapping.parameterName}")
 
     val property = sourceParameter.singleOrNull { it.path == explicitNameMapping.sourcePath }
             ?: throw KewtException("Not existing source: ${explicitNameMapping.parameterName}.${explicitNameMapping.sourcePath}")
@@ -157,9 +158,9 @@ data class ResolvedType<T>(
         val language: Language
 ) {
     override fun toString() = "$language: $type { ${properties.joinToString(", ")} }"
-    fun<R> mapParameter(f: (T)->R ): ResolvedType<R> = ResolvedType(
+    fun <R> mapParameter(f: (T) -> R): ResolvedType<R> = ResolvedType(
             type = type,
-            properties = properties.map{ f(it)}.toSet(),
+            properties = properties.map { f(it) }.toSet(),
             language = language
     )
 }
@@ -170,8 +171,8 @@ data class Source(
         val parameterName: String,
         val path: List<String>,
         val type: Type
-){
-    override fun toString() = """${(listOf(parameterName)  + path).joinToString(".")}: $type""" 
+) {
+    override fun toString() = """${(listOf(parameterName) + path).joinToString(".")}: $type"""
 }
 
 data class PropertyMapping(
