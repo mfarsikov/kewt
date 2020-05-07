@@ -25,6 +25,14 @@ data class Parameter(
     override fun toString() = "$name: $type"
 }
 
+data class ConstructorParameter(
+        val name: String,
+        val type: Type,
+        val hasDefaultValue: Boolean
+) {
+    override fun toString() = "$name: $type"
+}
+
 data class Type(
         val packageName: String,
         val name: String,

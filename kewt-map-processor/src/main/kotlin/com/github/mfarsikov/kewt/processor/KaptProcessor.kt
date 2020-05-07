@@ -117,23 +117,28 @@ class KewtMapperProcessor : AbstractProcessor() {
 
                                 val resolvedReturnType = propertiesResolver.resolveType(parsedFunction.returnType)
 
+                                val returnPropertiesWithDefaultValues = resolvedReturnType.properties.filter { it.hasDefaultValue }.map { it.name }.toSet()
+
+
+
                                 val sources = resolvedSources.flatMap { it.resolvedType.properties } +
                                         parsedFunction.parameters.map { Source(it.name, path = emptyList(), type = it.type) }
 
                                 val mappings = calculateMappings(
                                         sources = sources,
-                                        targets = resolvedReturnType.properties,
+                                        targets = resolvedReturnType.properties.map { Parameter(it.name, it.type) }.toSet(),
                                         nameMappings = nameMappings,
                                         explicitConverters = parsedFunction.annotationConfigs
                                                 .filter { it.converter != null }
                                                 .map { ExplicitConverter(targetName = it.target, converterName = it.converter!!) },
-                                        conversionFunctions = conversionFunctions
+                                        conversionFunctions = conversionFunctions,
+                                        returnPropertiesWithDefaultValues = returnPropertiesWithDefaultValues
                                 )
 
                                 MappedFunction(
                                         name = parsedFunction.name,
                                         parameters = resolvedSources,
-                                        returnType = resolvedReturnType,
+                                        returnType = resolvedReturnType.mapParameter { Parameter(it.name, it.type) },
                                         mappings = mappings
                                 )
                             }

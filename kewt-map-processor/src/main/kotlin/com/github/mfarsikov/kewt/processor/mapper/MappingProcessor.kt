@@ -14,7 +14,8 @@ fun calculateMappings(
         targets: Set<Parameter>,
         nameMappings: List<NameMapping>,
         explicitConverters: List<ExplicitConverter>,
-        conversionFunctions: List<ConversionFunction>
+        conversionFunctions: List<ConversionFunction>,
+        returnPropertiesWithDefaultValues: Set<String>
 ): List<PropertyMapping> {
 
     Logger.trace("Mapping: sources=$sources, targets=$targets, nameMappings=$nameMappings, explicitConverters=$explicitConverters, conversionFunctions=$conversionFunctions")
@@ -115,7 +116,7 @@ fun calculateMappings(
 
     val k2 = mappedByType.map { it.target }.toSet()
 
-    val notMappedTargets = t.filter { it !in k2 }
+    val notMappedTargets = t.filter { it !in k2 && it.name !in returnPropertiesWithDefaultValues }
 
     if (notMappedTargets.isNotEmpty()) throw KewtException("Not mapped targets: ${notMappedTargets}")
 

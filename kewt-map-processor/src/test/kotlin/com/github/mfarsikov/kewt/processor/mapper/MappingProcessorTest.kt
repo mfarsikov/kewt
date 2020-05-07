@@ -7,7 +7,6 @@ import com.github.mfarsikov.kewt.processor.KewtException
 import com.github.mfarsikov.kewt.processor.NameMapping
 import com.github.mfarsikov.kewt.processor.Parameter
 import com.github.mfarsikov.kewt.processor.Type
-import com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -428,10 +427,11 @@ fun calculateMappings1(
         explicitConverters: List<ExplicitConverter> = emptyList()
 ): List<PropertyMapping> {
     return calculateMappings(
+            sources = sources,
+            targets = targets.toSet(),
             nameMappings = nameMappings,
             explicitConverters = explicitConverters,
             conversionFunctions = conversionFunctions,
-            sources = sources,
-            targets = targets.toSet()
+            returnPropertiesWithDefaultValues = emptySet()
     )
 }

@@ -1,5 +1,6 @@
 package com.github.mfarsikov.kewt.processor.resolver
 
+import com.github.mfarsikov.kewt.processor.ConstructorParameter
 import com.github.mfarsikov.kewt.processor.KewtException
 import com.github.mfarsikov.kewt.processor.Logger
 import com.github.mfarsikov.kewt.processor.NameMapping
@@ -13,6 +14,7 @@ import com.github.mfarsikov.kewt.processor.mapper.Source
 import com.github.mfarsikov.kewt.processor.parser.kmClass
 import com.github.mfarsikov.kewt.processor.toType
 import com.google.protobuf.GeneratedMessageV3
+import kotlinx.metadata.Flag
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.RoundEnvironment
@@ -23,7 +25,7 @@ class PropertiesResolver(
         roundEnvironment: RoundEnvironment,
         private val processingEnv: ProcessingEnvironment
 ) {
-    private val cache: MutableMap<String, ResolvedType<Parameter>> = mutableMapOf(*types)
+    private val cache: MutableMap<String, ResolvedType<ConstructorParameter>> = mutableMapOf(*types)
 
     private val elementsByQualifiedName: Map<String, Element> = roundEnvironment.rootElements.associateBy {
         "${processingEnv.elementUtils.getPackageOf(it).qualifiedName}.${it.simpleName}"
@@ -39,7 +41,7 @@ class PropertiesResolver(
 
 
     @Synchronized
-    fun resolveType(type: Type): ResolvedType<Parameter> = cache.computeIfAbsent(type.qualifiedName()) {
+    fun resolveType(type: Type): ResolvedType<ConstructorParameter> = cache.computeIfAbsent(type.qualifiedName()) {
         Logger.trace("Resolving type: $type")
 
         val element = elementsByQualifiedName["${type.packageName}.${type.name}"]
@@ -78,9 +80,10 @@ class PropertiesResolver(
 
                     val realGetters = getters.filter { it.name !in anotherProtoFields }
                     val properties = realGetters.map {
-                        Parameter(
+                        ConstructorParameter(
                                 name = it.name.convertFromGetter(),
-                                type = it.genericReturnType.toType()
+                                type = it.genericReturnType.toType(),
+                                hasDefaultValue = false //TODO proto3 all fields optional
                         )
                     }
                     ResolvedType(
@@ -90,7 +93,7 @@ class PropertiesResolver(
                     )
                 } else {
                     Logger.debug("Java class: ${type.qualifiedName()} ")
-                    val properties: List<Parameter> = TODO()
+                    val properties: List<ConstructorParameter> = TODO()
                     //JAVA
                     ResolvedType(
                             type = type,
@@ -102,10 +105,14 @@ class PropertiesResolver(
             } else {
                 Logger.debug("Kotlin class: ${type.qualifiedName()} ")
                 //KOTLIN
-                val properties = loadFromLibrary.getAnnotation(Metadata::class.java).kmClass()!!.properties.map {//TODO fallback to java if km is null?
-                    Parameter(
+                val properties = loadFromLibrary.getAnnotation(Metadata::class.java).kmClass()!!
+                        .constructors.single { Flag.Constructor.IS_PRIMARY.invoke(it.flags) }
+                        .valueParameters
+                        .map {//TODO fallback to java if km is null?
+                    ConstructorParameter(
                             name = it.name,
-                            type = it.returnType.toType()
+                            type = it.type!!.toType(),
+                            hasDefaultValue = Flag.ValueParameter.DECLARES_DEFAULT_VALUE.invoke(it.flags)
                     )
                 }
                 ResolvedType(
@@ -116,12 +123,16 @@ class PropertiesResolver(
             }
         } else {
             Logger.trace("Found in sources: ${type.qualifiedName()} ")
-            val properties = element.getAnnotation(Metadata::class.java).kmClass()!!.properties.map {//TODO fallback to java if km is null?
-                Parameter(
-                        name = it.name,
-                        type = it.returnType.toType()
-                )
-            }
+            val c = element.getAnnotation(Metadata::class.java).kmClass()!!//TODO fallback to java if km is null?
+            val properties = c.constructors.single { Flag.Constructor.IS_PRIMARY.invoke(it.flags) }
+                    .valueParameters
+                    .map {
+                        ConstructorParameter(
+                                name = it.name,
+                                type = it.type!!.toType(),
+                                hasDefaultValue = Flag.ValueParameter.DECLARES_DEFAULT_VALUE.invoke(it.flags)
+                        )
+                    }
             ResolvedType(
                     type = type,
                     properties = properties.toSet(),
@@ -194,10 +205,28 @@ val types = listOf(//TODO check could it be skipped
         Type("kotlin", "Float"),
         Type("kotlin", "Boolean"),
         Type("java.util", "UUID")
-).map { ResolvedType<Parameter>(
-        type = it,
-        properties = emptySet(),
-        language = Language.KOTLIN
-) }
+).map {
+    ResolvedType<ConstructorParameter>(
+            type = it,
+            properties = emptySet(),
+            language = Language.KOTLIN
+    )
+}
         .map { it.type.qualifiedName() to it }
         .toTypedArray()
+
+data class A(val x: String = "X", val y: Int, val z: Boolean = true)
+
+
+fun main() {
+
+
+    println("XXX")
+    val metadata = A::class.java.annotations.filter { it.annotationClass == Metadata::class }.single() as Metadata
+
+    val m = metadata.kmClass()!!
+    m.constructors.single { Flag.Constructor.IS_PRIMARY.invoke(it.flags) }.valueParameters.forEach {
+        println(it.name + " " + Flag.ValueParameter.DECLARES_DEFAULT_VALUE.invoke(it.flags))
+
+    }
+}

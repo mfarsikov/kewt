@@ -1,6 +1,5 @@
 # Plan
 ## Mandatory
-* Allow implicitly ignore properties with default values
 * Support Sets element mappings
   * against: if projection function is surjective, result set will lose elements
     * introduce annotation `@Injective`?
