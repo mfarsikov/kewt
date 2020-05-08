@@ -14,7 +14,7 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.TypeSpec
 import java.time.OffsetDateTime
 
-fun render(converter: RenderConverterClass, version:String, date: OffsetDateTime): String {
+fun render(converter: RenderConverterClass, version: String, date: OffsetDateTime): String {
     val fsb = FileSpec.builder(converter.type.packageName, converter.type.name)
     val classBuilder = TypeSpec.classBuilder("${converter.type.name}Impl")
     classBuilder.addSuperinterface(ClassName(converter.type.packageName, converter.type.name))
@@ -43,7 +43,7 @@ fun render(converter: RenderConverterClass, version:String, date: OffsetDateTime
         funcBuilder.returns(ClassName(function.returnType.packageName, function.returnType.name))
 
         val functionBody = when (function.returnTypeLanguage) {
-            Language.KOTLIN -> generateKotlinConstructorCall(function.returnType, function.mappings)
+            Language.KOTLIN -> generateKotlinConstructorCall(function.returnType, function.mappings, function.targetParameterName)
             Language.PROTO -> generateProtobufBuilderCall(function.returnType, function.mappings)
             Language.JAVA -> TODO("generate java setters")
         }
@@ -90,7 +90,7 @@ private fun generateProtobufBuilderCall(returnType: Type, mappings: List<RenderP
     return codeBuilder.build()
 }
 
-fun generateKotlinConstructorCall(type: Type, mappings: List<RenderPropertyMappings>): CodeBlock {
+fun generateKotlinConstructorCall(type: Type, mappings: List<RenderPropertyMappings>, targetParameterName: String?): CodeBlock {
     val codeBuilder = CodeBlock.builder().indent().add("return ${type.name}(")
     codeBuilder.indent().indent()
 
@@ -104,7 +104,9 @@ fun generateKotlinConstructorCall(type: Type, mappings: List<RenderPropertyMappi
             else -> sourceExtraction
         }
 
-        "${it.targetPropertyName} = $rightPart"
+        val copyFromTargetBlock = if (targetParameterName != null) " ?: $targetParameterName.${it.targetPropertyName}" else ""
+
+        "${it.targetPropertyName} = $rightPart" + copyFromTargetBlock
     }
             .joinToString(separator = ",\n", prefix = "\n", postfix = "\n"))
 
@@ -125,7 +127,8 @@ data class RenderConverterFunction(
         val returnTypeLanguage: Language,
         val parameters: List<Parameter>,
         val returnType: Type,
-        val mappings: List<RenderPropertyMappings>
+        val mappings: List<RenderPropertyMappings>,
+        val targetParameterName: String?
 )
 
 data class RenderPropertyMappings(

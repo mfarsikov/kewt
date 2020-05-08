@@ -4,7 +4,7 @@ package com.github.mfarsikov.kewt.annotations
  * Is used on interfaces. Kewt generates implementation classes for such interfaces.
  */
 @Retention(AnnotationRetention.SOURCE)
-@Target(AnnotationTarget.CLASS)
+@kotlin.annotation.Target(AnnotationTarget.CLASS)
 annotation class Mapper
 
 /**
@@ -34,7 +34,7 @@ annotation class Mapper
  * @param converter function name, used if there more than one function with the same input and output types
  */
 @Repeatable
-@Target(AnnotationTarget.FUNCTION)
+@kotlin.annotation.Target(AnnotationTarget.FUNCTION)
 annotation class Mapping(
         val source: String = "",
         val target: String = "",
@@ -46,7 +46,13 @@ annotation class Mapping(
  * Most probably will be removed when Kotlin will support repeatable annotations.
  * @param value array of explicit mappings
  */
-@Target(AnnotationTarget.FUNCTION)
+@kotlin.annotation.Target(AnnotationTarget.FUNCTION)
 annotation class Mappings(
         val value: Array<Mapping>
 )
+
+/**
+ * Specifies mapping target (one of function parameters)
+ */
+@kotlin.annotation.Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class Target

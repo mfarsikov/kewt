@@ -44,7 +44,8 @@ class RendererKtTest {
                                                 targetProperty = "lastName",
                                                 conversionFunction = "convert"
                                         )
-                                )
+                                ),
+                                targetParameterName = null
                         )),
                         springComponent = false
                 ),
@@ -129,7 +130,8 @@ class RendererKtTest {
                                                         targetProperty = "lastName",
                                                         conversionFunction = "convert"
                                                 )
-                                        )
+                                        ),
+                                        targetParameterName = null
                                 ),
                                 RenderConverterFunction(
                                         name = "convert2",
@@ -151,7 +153,8 @@ class RendererKtTest {
                                                         targetProperty = "lastName",
                                                         conversionFunction = "convert"
                                                 )
-                                        )
+                                        ),
+                                        targetParameterName = null
                                 )
                         ),
                         springComponent = false
@@ -216,7 +219,8 @@ class RendererKtTest {
                                                 conversionFunction = "f",
                                                 usingElementMapping = true
                                         )
-                                )
+                                ),
+                                targetParameterName = null
                         )),
                         springComponent = false
                 ),
@@ -278,7 +282,8 @@ class RendererKtTest {
                                                 targetProperty = "lastName",
                                                 conversionFunction = "convert"
                                         )
-                                )
+                                ),
+                                targetParameterName = null
                         )),
                         springComponent = true
                 ),
@@ -342,7 +347,8 @@ class RendererKtTest {
                                                 sourceProperty = "lastName",
                                                 targetProperty = "lastName"
                                         )
-                                )
+                                ),
+                                targetParameterName = null
                         )),
                         springComponent = false
                 ),
@@ -372,6 +378,82 @@ class RendererKtTest {
                  .build()
                }
              }
+
+         """.trimIndent()
+
+        res shouldBe l
+    }
+
+
+    @Test
+    fun `render target parameter mapping`() {
+
+        val res = render(
+                RenderConverterClass(
+                        type = Type(packageName = "mypckg", name = "MyConveretr"),
+                        converterFunctions = listOf(
+                                RenderConverterFunction(
+                                        name = "convert1",
+                                        returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
+                                        parameters = listOf(
+                                                Parameter(
+                                                        name = "sourcePerson",
+                                                        type = Type(
+                                                                name = "Person",
+                                                                packageName = "com.personPackage"
+                                                        )
+                                                ),
+                                                Parameter(
+                                                        name = "targetPerson",
+                                                        type = Type(
+                                                                name = "Person",
+                                                                packageName = "com.personPackage"
+                                                        )
+                                                )
+                                        ),
+                                        returnType = Type(
+                                                name = "Person",
+                                                packageName = "com.personPackage"
+                                        ),
+                                        mappings = listOf(
+                                                propertyMapping(
+                                                        parameterName = "sourcePerson",
+                                                        sourceProperty = "firstName",
+                                                        targetProperty = "firstName"
+                                                ),
+                                                propertyMapping(
+                                                        parameterName = "sourcePerson",
+                                                        sourceProperty = "lastName",
+                                                        targetProperty = "lastName"
+                                                )
+                                        ),
+                                        targetParameterName = "targetPerson"
+                                )
+                        ),
+                        springComponent = false
+                ),
+                version = "v-1.0.0-SNAPSHOT",
+                date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+        )
+
+
+        @Language("kotlin")
+        val l = """
+             package mypckg
+
+             import com.personPackage.Person
+             import javax.annotation.Generated
+             
+             @Generated(
+               value = ["com.github.mfarsikov.kewt.processor.KewtMapperProcessor"],
+               date = "2020-12-31T23:59:59Z",
+               comments = "v-1.0.0-SNAPSHOT"
+             )
+             class MyConveretrImpl : MyConveretr {
+               override fun convert1(sourcePerson: Person, targetPerson: Person): Person = Person(
+                   firstName = sourcePerson.firstName ?: targetPerson.firstName,
+                   lastName = sourcePerson.lastName ?: targetPerson.lastName
+               )}
 
          """.trimIndent()
 

@@ -78,7 +78,7 @@ class KewtMapperProcessor : AbstractProcessor() {
                             .map {
                                 ConversionFunction(
                                         name = it.name,
-                                        parameter = it.parameters.single(),
+                                        parameter = it.parameters.single().toParameter(),
                                         returnType = it.returnType
                                 )
                             }
@@ -95,34 +95,43 @@ class KewtMapperProcessor : AbstractProcessor() {
                             .map { parsedFunction ->
 
                                 Logger.debug("Abstract function: $parsedFunction")
-                                val nameMappings = normalizeNames(parsedFunction.parameters, parsedFunction.annotationConfigs)
+                                val nameMappings = normalizeNames(parsedFunction.parameters.map { it.toParameter() }, parsedFunction.annotationConfigs)
 
 
-                                val resolvedSources = parsedFunction.parameters.map { parameter ->
+                                val targetParameter = parsedFunction.parameters.singleOrNull { it.isTarget }
+                                val invalidTargetParameterType = targetParameter?.type?.toSimpleType()
+                                        ?.takeIf { it != parsedFunction.returnType.toSimpleType()}
 
-                                    val ms = nameMappings.filter { it.parameterName == parameter.name }
 
-                                    val nestedSources = propertiesResolver.nestedParameterProperties(ms, parameter)
+                                if(invalidTargetParameterType!= null) throw KewtException("target paratmeter type does not match return type. target parameter: $invalidTargetParameterType, return type:${parsedFunction.returnType.toSimpleType()}")
 
-                                    val resolveType = propertiesResolver.resolveType(parameter.type)
+                                val resolvedSources = parsedFunction.parameters
+                                        .filter { !it.isTarget }
+                                        .map { parameter ->
 
-                                    val rt = resolveType
-                                            .mapParameter { p -> Source(parameterName = parameter.name, path = listOf(p.name), type = p.type) }
-                                            .let {
-                                                it.copy(properties = it.properties + nestedSources)
-                                            }
+                                            val ms = nameMappings.filter { it.parameterName == parameter.name }
 
-                                    ResolvedParameter(parameter.name, rt)
-                                }
+                                            val nestedSources = propertiesResolver.nestedParameterProperties(ms, parameter.toParameter())
+
+                                            val resolveType = propertiesResolver.resolveType(parameter.type)
+
+                                            val rt = resolveType
+                                                    .mapParameter { p -> Source(parameterName = parameter.name, path = listOf(p.name), type = p.type) }
+                                                    .let {
+                                                        it.copy(properties = it.properties + nestedSources)
+                                                    }
+
+                                            ResolvedParameter(parameter.name, rt)
+                                        }
 
                                 val resolvedReturnType = propertiesResolver.resolveType(parsedFunction.returnType)
 
                                 val returnPropertiesWithDefaultValues = resolvedReturnType.properties.filter { it.hasDefaultValue }.map { it.name }.toSet()
 
 
-
                                 val sources = resolvedSources.flatMap { it.resolvedType.properties } +
                                         parsedFunction.parameters.map { Source(it.name, path = emptyList(), type = it.type) }
+
 
                                 val mappings = calculateMappings(
                                         sources = sources,
@@ -137,9 +146,11 @@ class KewtMapperProcessor : AbstractProcessor() {
 
                                 MappedFunction(
                                         name = parsedFunction.name,
-                                        parameters = resolvedSources,
+                                        parameters = parsedFunction.parameters.map { it.toParameter() },
                                         returnType = resolvedReturnType.mapParameter { Parameter(it.name, it.type) },
-                                        mappings = mappings
+                                        mappings = mappings,
+                                        targetParameterName = targetParameter?.name
+
                                 )
                             }
 
@@ -150,12 +161,7 @@ class KewtMapperProcessor : AbstractProcessor() {
                                         RenderConverterFunction(
                                                 name = it.name,
                                                 returnTypeLanguage = it.returnType.language,
-                                                parameters = it.parameters.map {
-                                                    Parameter(
-                                                            name = it.name,
-                                                            type = it.resolvedType.type
-                                                    )
-                                                },
+                                                parameters = it.parameters,
                                                 returnType = it.returnType.type,
                                                 mappings = it.mappings.map {
                                                     RenderPropertyMappings(
@@ -164,7 +170,8 @@ class KewtMapperProcessor : AbstractProcessor() {
                                                             targetPropertyName = it.target.name,
                                                             conversionContext = it.conversionContext!!
                                                     )
-                                                }
+                                                },
+                                                targetParameterName = it.targetParameterName
                                         )
                                     },
                                     springComponent = springComponent
@@ -177,7 +184,7 @@ class KewtMapperProcessor : AbstractProcessor() {
 
                     file.openWriter().use { it.write(text) }
                 } catch (ex: KewtException) {
-                    Logger.error(ex,"Cannot process ${element.simpleName}: ${ex.message}")
+                    Logger.error(ex, "Cannot process ${element.simpleName}: ${ex.message}")
                 }
             }
             Logger.info("Finished processing @Mapper annotations")
@@ -205,12 +212,15 @@ class KewtMapperProcessor : AbstractProcessor() {
                 )
             }
 }
+
 data class MappedFunction(
         val name: String,
-        val parameters: List<ResolvedParameter<Source>>,
+        val parameters: List<Parameter>,
         val returnType: ResolvedType<Parameter>,
-        val mappings: List<PropertyMapping>
+        val mappings: List<PropertyMapping>,
+        val targetParameterName: String?
 )
+
 data class ExplicitConverter(
         val targetName: String,
         val converterName: String
@@ -221,7 +231,7 @@ data class NameMapping(
         val sourcePath: List<String>,
         val targetParameterName: String
 ) {
-    override fun toString() = "$targetParameterName <= ${(listOf(parameterName)+sourcePath).joinToString(".")}"
+    override fun toString() = "$targetParameterName <= ${(listOf(parameterName) + sourcePath).joinToString(".")}"
 }
 
 data class ConversionFunction(

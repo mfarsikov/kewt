@@ -1,6 +1,7 @@
 package com.github.mfarsikov.kewt.processor
 
 import com.github.mfarsikov.kewt.processor.mapper.AnnotationConfig
+import com.github.mfarsikov.kewt.processor.parser.SimpleType
 
 
 data class AClass(
@@ -10,13 +11,21 @@ data class AClass(
 
 data class Function(
         val name: String,
-        val parameters: List<Parameter>,
+        val parameters: List<FunctionParameter>,
         val returnType: Type,
         val annotationConfigs: List<AnnotationConfig>,
         val abstract: Boolean
 ) {
     override fun toString() = "$name(${parameters.map { it }.joinToString()}): ${returnType}"
 }
+
+data class FunctionParameter(
+        val name: String,
+        val type: Type,
+        val isTarget: Boolean
+)
+
+fun FunctionParameter.toParameter() = Parameter(name, type)
 
 data class Parameter(
         val name: String,
@@ -51,6 +60,7 @@ data class Type(
     private fun params() = typeParameters.takeIf { it.isNotEmpty() }?.joinToString(prefix = "<", postfix = ">") ?: ""
 }
 
+fun Type.toSimpleType() = SimpleType(packageName = packageName, name = name)
 enum class Nullability {
     NULLABLE {
         override fun toString() = "?"

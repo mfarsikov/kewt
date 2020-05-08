@@ -3,12 +3,14 @@
 * Support Sets element mappings
   * against: if projection function is surjective, result set will lose elements
     * introduce annotation `@Injective`?
-* updates in PATCH mode (using copy method and using non-nullable source values)
-  * allow mutations using setters? 
+* allow mutations using setters? (allow Unit return type?) 
 
 ## Nice to have
 * Preserve annotations in generated classes
 * import other converters 
+* validations:
+  * function has return type
+  * in case of patch -- return type matches @Target
 
 ## Something to think of
 * Add errors to rendered file as comments?
