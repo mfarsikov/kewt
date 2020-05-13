@@ -1,1 +1,7 @@
+pluginManagement{
+    repositories{
+        gradlePluginPortal()
+        mavenLocal()
+    }
+}
 include("kewt-map-processor", "kewt-map-annotations", "examples", "examples-proto-lib")

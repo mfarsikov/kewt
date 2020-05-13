@@ -7,6 +7,28 @@ import com.squareup.kotlinpoet.asTypeName
 import com.sun.tools.javac.code.Symbol
 import javax.lang.model.element.Element
 
+fun extractAnnotationsFromJavaPackage(e: Element): List<AnnotatedFunction> {
+    e as Symbol.ClassSymbol
+
+    return e.members_field.elements.filterIsInstance<Symbol.VarSymbol>()
+            .filter {
+                    it.type.tsym.type.toString().startsWith("kotlin.jvm.functions.Function")
+            }
+            .map {
+                AnnotatedFunction(
+                        name = it.name.toString(),
+                        parameters = it.type.allparams().dropLast(1).mapIndexed() {i, paramType ->
+                            AnnotatedFunctionParameter(
+                                    name = "param$i",
+                                    simpleType = paramType.toSimpleType(),
+                                    isTarget = false
+                            )
+                        },
+                        mappingsAnnotation = it.getAnnotation(Mappings::class.java)
+                )
+            }
+}
+
 fun extractAnnotationsFromJava(e: Element): List<AnnotatedFunction> {
     e as Symbol.ClassSymbol
 

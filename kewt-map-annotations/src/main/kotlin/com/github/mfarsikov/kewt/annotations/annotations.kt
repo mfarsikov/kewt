@@ -1,10 +1,12 @@
 package com.github.mfarsikov.kewt.annotations
 
+import kotlin.annotation.AnnotationTarget.*
+
 /**
  * Is used on interfaces. Kewt generates implementation classes for such interfaces.
  */
 @Retention(AnnotationRetention.SOURCE)
-@kotlin.annotation.Target(AnnotationTarget.CLASS)
+@kotlin.annotation.Target(CLASS, FIELD, FILE)
 annotation class Mapper
 
 /**
@@ -34,7 +36,7 @@ annotation class Mapper
  * @param converter function name, used if there more than one function with the same input and output types
  */
 @Repeatable
-@kotlin.annotation.Target(AnnotationTarget.FUNCTION)
+@kotlin.annotation.Target(FUNCTION, FIELD)
 annotation class Mapping(
         val source: String = "",
         val target: String = "",
@@ -46,13 +48,16 @@ annotation class Mapping(
  * Most probably will be removed when Kotlin will support repeatable annotations.
  * @param value array of explicit mappings
  */
-@kotlin.annotation.Target(AnnotationTarget.FUNCTION)
+@kotlin.annotation.Target(FUNCTION, FIELD)
 annotation class Mappings(
         val value: Array<Mapping>
 )
 
+@kotlin.annotation.Target(FUNCTION, FIELD)
+annotation class Isomorphism
+
 /**
  * Specifies mapping target (one of function parameters)
  */
-@kotlin.annotation.Target(AnnotationTarget.VALUE_PARAMETER)
+@kotlin.annotation.Target(VALUE_PARAMETER)
 annotation class Target

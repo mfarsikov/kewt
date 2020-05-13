@@ -10,7 +10,7 @@
   * function has return type
 * allow mutations using setters? (allow Unit return type?) 
 * Generate extension functions? Companion objects?
-  * scan for annotated vareables (just to avoid using interfaces) `@Mapping lateinit var toEmployee: Person.() -> Employee`
+  * scan for annotated variables (just to avoid using interfaces) `@Mapping lateinit var toEmployee: Person.() -> Employee`
   * `@Isomorphism` generate extension functions in two directions
   
 ## Something to think of

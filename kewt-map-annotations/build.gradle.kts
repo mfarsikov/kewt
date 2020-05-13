@@ -6,13 +6,17 @@ plugins {
     id("org.jetbrains.dokka") version "0.10.1"
     id("maven-publish")
     id("com.jfrog.bintray")
+    id("com.github.mfarsikov.kewt-versioning")
 }
 
 repositories {
     mavenCentral()
     jcenter()
 }
-
+kewtVersioning{
+    gitPath = project.rootDir
+}
+version = kewtVersioning.version
 group = "com.github.mfarsikov"
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 
@@ -51,7 +55,7 @@ publishing {
         create<MavenPublication>("bintray") {
             groupId = project.group as String
             artifactId = project.name
-            version = project.version as String
+            version = project.version.toString()
             from(components["java"])
             artifact(dokkaJar)
 

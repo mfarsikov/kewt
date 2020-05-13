@@ -6,7 +6,8 @@ import com.github.mfarsikov.kewt.processor.parser.SimpleType
 
 data class AClass(
         val type: Type,
-        val functions: Iterable<Function>
+        val functions: Iterable<Function>,
+        val isInterface:Boolean
 )
 
 data class Function(
