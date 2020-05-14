@@ -15,7 +15,8 @@ data class Function(
         val parameters: List<FunctionParameter>,
         val returnType: Type,
         val annotationConfigs: List<AnnotationConfig>,
-        val abstract: Boolean
+        val abstract: Boolean,
+        val isExtension: Boolean
 ) {
     override fun toString() = "$name(${parameters.map { it }.joinToString()}): ${returnType}"
 }

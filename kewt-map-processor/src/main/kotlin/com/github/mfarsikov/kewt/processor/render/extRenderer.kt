@@ -33,16 +33,15 @@ fun renderExt(converter: RenderConverterClass, version: String, date: OffsetDate
 
         funcBuilder.returns(ClassName(function.returnType.packageName, function.returnType.name))
 
-
-        val n = function.parameters.first().name
+        val receiverName = function.parameters.first().name
 
         val ms = function.mappings.map {
-            if (it.parameterName == n) it.copy(parameterName = "this") else it
+            if (it.parameterName == receiverName) it.copy(parameterName = "this@${function.name}") else it
         }
 
         val functionBody = when (function.returnTypeLanguage) {
             Language.KOTLIN -> generateKotlinConstructorCallExt(function.returnType, ms, function.targetParameterName)
-            Language.PROTO -> generateProtobufBuilderCall(function.returnType, function.mappings)
+            Language.PROTO -> generateProtobufBuilderCall(function.name, function.returnType, ms)
             Language.JAVA -> TODO("generate java setters")
         }
 
@@ -54,7 +53,7 @@ fun renderExt(converter: RenderConverterClass, version: String, date: OffsetDate
     return fsb.build().toString()
 }
 
-private fun generateProtobufBuilderCall(returnType: Type, mappings: List<RenderPropertyMappings>): CodeBlock {
+private fun generateProtobufBuilderCall(fname: String, returnType: Type, mappings: List<RenderPropertyMappings>): CodeBlock {
     val codeBuilder = CodeBlock.builder()
     codeBuilder.add("""@Suppress("UNNECESSARY_SAFE_CALL")""")
     codeBuilder.beginControlFlow("return ${returnType.name}.newBuilder().apply {")
@@ -64,9 +63,9 @@ private fun generateProtobufBuilderCall(returnType: Type, mappings: List<RenderP
                 "${it.parameterName}.${it.sourcePropertyName}" +
                         if (it.conversionContext.conversionFunction != null) {
                             if (it.conversionContext.usingElementMapping) {
-                                "?.map { ${it.conversionContext.conversionFunction.name}(it) }"
+                                "?.map { ${functionCall(it.conversionContext.conversionFunction.name, "it", it.conversionContext.conversionFunction.isExtension)} }"
                             } else {
-                                "?.let { ${it.conversionContext.conversionFunction.name}(it) }"
+                                "?.let { ${functionCall(it.conversionContext.conversionFunction.name, "it",  it.conversionContext.conversionFunction.isExtension)} }"
                             }
                         } else {
                             ""
@@ -86,6 +85,9 @@ private fun generateProtobufBuilderCall(returnType: Type, mappings: List<RenderP
     codeBuilder.add(".build()\n")
     return codeBuilder.build()
 }
+
+fun functionCall(fname: String, parameterName: String, isExtension: Boolean) = if (isExtension)   "$parameterName.$fname()" else "$fname($parameterName)"
+
 
 private fun generateKotlinConstructorCallExt(type: Type, mappings: List<RenderPropertyMappings>, targetParameterName: String?): CodeBlock {
     val codeBuilder = CodeBlock.builder().indent().add("return ${type.name}(")

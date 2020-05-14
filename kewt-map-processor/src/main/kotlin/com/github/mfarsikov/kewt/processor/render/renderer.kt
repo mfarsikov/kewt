@@ -1,5 +1,6 @@
 package com.github.mfarsikov.kewt.processor.render
 
+import com.github.mfarsikov.kewt.processor.ConversionFunction
 import com.github.mfarsikov.kewt.processor.Parameter
 import com.github.mfarsikov.kewt.processor.Type
 import com.github.mfarsikov.kewt.processor.mapper.ConversionContext

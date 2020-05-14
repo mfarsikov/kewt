@@ -84,7 +84,8 @@ class KewtMapperProcessor : AbstractProcessor() {
                                 ConversionFunction(
                                         name = it.name,
                                         parameter = it.parameters.single().toParameter(),
-                                        returnType = it.returnType
+                                        returnType = it.returnType,
+                                        isExtension = it.isExtension
                                 )
                             }
 
@@ -271,7 +272,8 @@ data class NameMapping(
 data class ConversionFunction(
         val name: String,
         val parameter: Parameter,
-        val returnType: Type
+        val returnType: Type,
+        val isExtension: Boolean
 ) {
     override fun toString() = "$name($parameter): $returnType"
 }

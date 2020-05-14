@@ -3,18 +3,13 @@ plugins {
     id("maven-publish")
     id("groovy")
     id("com.jfrog.bintray")
-    id("com.github.mfarsikov.kewt-versioning")
 }
 
 repositories {
     mavenLocal()
     mavenCentral()
 }
-kewtVersioning{
-    gitPath = project.rootDir
-}
 
-version = kewtVersioning.version
 group = "com.github.mfarsikov"
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 

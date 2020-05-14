@@ -6,17 +6,13 @@ plugins {
     id("org.jetbrains.dokka") version "0.10.1"
     id("maven-publish")
     id("com.jfrog.bintray")
-    id("com.github.mfarsikov.kewt-versioning")
 }
 
 repositories {
     mavenCentral()
     jcenter()
 }
-kewtVersioning{
-    gitPath = project.rootDir
-}
-version = kewtVersioning.version
+
 group = "com.github.mfarsikov"
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 

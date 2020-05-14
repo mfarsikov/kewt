@@ -6,7 +6,7 @@ import kotlin.annotation.AnnotationTarget.*
  * Is used on interfaces. Kewt generates implementation classes for such interfaces.
  */
 @Retention(AnnotationRetention.SOURCE)
-@kotlin.annotation.Target(CLASS, FIELD, FILE)
+@kotlin.annotation.Target(CLASS, FILE)
 annotation class Mapper
 
 /**
