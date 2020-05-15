@@ -1,15 +1,14 @@
 package com.github.mfarsikov.kewt.processor.parser
 
-import com.github.mfarsikov.kewt.processor.AClass
 import com.github.mfarsikov.kewt.processor.Function
 import com.github.mfarsikov.kewt.processor.FunctionParameter
+import com.github.mfarsikov.kewt.processor.ParsedMapper
 import com.github.mfarsikov.kewt.processor.Type
 import com.github.mfarsikov.kewt.processor.mapper.AnnotationConfig
 import com.github.mfarsikov.kewt.processor.toSimpleType
 import com.github.mfarsikov.kewt.processor.toType
 import kotlinx.metadata.Flag
 import kotlinx.metadata.KmAnnotation
-import kotlinx.metadata.KmClass
 import kotlinx.metadata.KmExtensionType
 import kotlinx.metadata.KmPackage
 import kotlinx.metadata.KmTypeExtensionVisitor
@@ -20,24 +19,25 @@ import kotlinx.metadata.jvm.KotlinClassMetadata
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
 
-fun parse(element: Element, processingEnv: ProcessingEnvironment): AClass {
+fun parse(element: Element, processingEnv: ProcessingEnvironment): ParsedMapper {
     val kotlinClassMetadata = read(element.getAnnotation(Metadata::class.java))
 
     return when (kotlinClassMetadata) {
-        is KotlinClassMetadata.FileFacade -> parseFile(element, processingEnv)
-        is KotlinClassMetadata.Class -> parseInterface(element, processingEnv)
+        is KotlinClassMetadata.FileFacade -> parseFile(element, processingEnv, kotlinClassMetadata)
+        is KotlinClassMetadata.Class -> parseInterface(element, processingEnv, kotlinClassMetadata)
         else -> throw RuntimeException()
     }
 }
 
-fun parseInterface(element: Element, processingEnv: ProcessingEnvironment): AClass {
+fun parseInterface(element: Element, processingEnv: ProcessingEnvironment, kotlinClassMetadata: KotlinClassMetadata.Class): ParsedMapper {
 
     val converterPackage = processingEnv.elementUtils.getPackageOf(element)
-    val converterInterfaceMetadata = element.getAnnotation(Metadata::class.java).kmClass()
+
+    val converterInterfaceMetadata = kotlinClassMetadata.toKmClass()
 
     val annotatedFunctions = extractAnnotationsFromJava(element)
 
-    val parsedFunctions = converterInterfaceMetadata!!.functions.map { converterFunction ->
+    val parsedFunctions = converterInterfaceMetadata.functions.map { converterFunction ->
 
         val sig = FunctionSignature(name = converterFunction.name, params = converterFunction.valueParameters.map { it.type!!.toType().toSimpleType() })
 
@@ -64,7 +64,7 @@ fun parseInterface(element: Element, processingEnv: ProcessingEnvironment): ACla
         )
     }
 
-    return AClass(
+    return ParsedMapper(
             type = Type(
                     packageName = converterPackage.qualifiedName.toString(),
                     name = converterInterfaceMetadata.name.substringAfterLast("/")
@@ -74,11 +74,11 @@ fun parseInterface(element: Element, processingEnv: ProcessingEnvironment): ACla
     )
 }
 
-fun parseFile(element: Element, processingEnv: ProcessingEnvironment): AClass {
+fun parseFile(element: Element, processingEnv: ProcessingEnvironment, kotlinClassMetadata: KotlinClassMetadata.FileFacade): ParsedMapper {
 
     val converterPackage = processingEnv.elementUtils.getPackageOf(element)
 
-    val fileMetadata = element.getAnnotation(Metadata::class.java).kmFile()
+    val fileMetadata = kotlinClassMetadata.kmFile()
 
     val annotatedFunctions = extractAnnotationsFromJavaPackage(element)
 
@@ -101,7 +101,7 @@ fun parseFile(element: Element, processingEnv: ProcessingEnvironment): AClass {
         )
     }
 
-    val parsedFunctions = fileMetadata!!.properties.map { property ->
+    val parsedFunctions = fileMetadata.properties.map { property ->
 
 
         val accumulator = mutableListOf<KmAnnotation>()
@@ -157,7 +157,7 @@ fun parseFile(element: Element, processingEnv: ProcessingEnvironment): AClass {
         )
     }
 
-    return AClass(
+    return ParsedMapper(
             type = Type(
                     packageName = converterPackage.qualifiedName.toString(),
                     name = element.simpleName.toString().substringBeforeLast("Kt")
@@ -177,25 +177,8 @@ fun AnnotatedFunction.signature() = FunctionSignature(
         params = parameters.map { it.simpleType }
 )
 
-fun Metadata.kmFile(): KmPackage? =
-        let {
-            KotlinClassHeader(
-                    it.kind,
-                    it.metadataVersion,
-                    it.bytecodeVersion,
-                    it.data1,
-                    it.data2,
-                    it.extraString,
-                    it.packageName,
-                    it.extraInt
-            )
-        }
-                .let { KotlinClassMetadata.read(it) }
-                ?.tryCast<KotlinClassMetadata.FileFacade>()
-                ?.let {
-
+fun KotlinClassMetadata.FileFacade.kmFile(): KmPackage? = let {
                     KmPackage().apply(it::accept)
-
                 }
 
 fun read(metadata: Metadata): KotlinClassMetadata? = metadata.let {
@@ -212,21 +195,5 @@ fun read(metadata: Metadata): KotlinClassMetadata? = metadata.let {
 }
         .let { KotlinClassMetadata.read(it) }
 
-fun Metadata.kmClass(): KmClass? =
-        let {
-            KotlinClassHeader(
-                    it.kind,
-                    it.metadataVersion,
-                    it.bytecodeVersion,
-                    it.data1,
-                    it.data2,
-                    it.extraString,
-                    it.packageName,
-                    it.extraInt
-            )
-        }
-                .let { KotlinClassMetadata.read(it) }
-                ?.tryCast<KotlinClassMetadata.Class>()
-                ?.toKmClass()
 
-private inline fun <reified T> Any.tryCast(): T? = if (this is T) this else null
+inline fun <reified T> Any.tryCast(): T? = if (this is T) this else null

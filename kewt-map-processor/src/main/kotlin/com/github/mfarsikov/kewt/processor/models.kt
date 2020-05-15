@@ -4,7 +4,7 @@ import com.github.mfarsikov.kewt.processor.mapper.AnnotationConfig
 import com.github.mfarsikov.kewt.processor.parser.SimpleType
 
 
-data class AClass(
+data class ParsedMapper(
         val type: Type,
         val functions: Iterable<Function>,
         val isInterface:Boolean

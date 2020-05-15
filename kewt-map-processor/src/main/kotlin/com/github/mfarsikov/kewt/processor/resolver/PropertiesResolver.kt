@@ -11,10 +11,13 @@ import com.github.mfarsikov.kewt.processor.extractPackage
 import com.github.mfarsikov.kewt.processor.mapper.Language
 import com.github.mfarsikov.kewt.processor.mapper.ResolvedType
 import com.github.mfarsikov.kewt.processor.mapper.Source
-import com.github.mfarsikov.kewt.processor.parser.kmClass
+import com.github.mfarsikov.kewt.processor.parser.tryCast
 import com.github.mfarsikov.kewt.processor.toType
 import com.google.protobuf.GeneratedMessageV3
 import kotlinx.metadata.Flag
+import kotlinx.metadata.KmClass
+import kotlinx.metadata.jvm.KotlinClassHeader
+import kotlinx.metadata.jvm.KotlinClassMetadata
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.RoundEnvironment
@@ -217,16 +220,19 @@ val types = listOf(//TODO check could it be skipped
 
 data class A(val x: String = "X", val y: Int, val z: Boolean = true)
 
-
-fun main() {
-
-
-    println("XXX")
-    val metadata = A::class.java.annotations.filter { it.annotationClass == Metadata::class }.single() as Metadata
-
-    val m = metadata.kmClass()!!
-    m.constructors.single { Flag.Constructor.IS_PRIMARY.invoke(it.flags) }.valueParameters.forEach {
-        println(it.name + " " + Flag.ValueParameter.DECLARES_DEFAULT_VALUE.invoke(it.flags))
-
-    }
-}
+fun Metadata.kmClass(): KmClass? =
+        let {
+            KotlinClassHeader(
+                    it.kind,
+                    it.metadataVersion,
+                    it.bytecodeVersion,
+                    it.data1,
+                    it.data2,
+                    it.extraString,
+                    it.packageName,
+                    it.extraInt
+            )
+        }
+                .let { KotlinClassMetadata.read(it) }
+                ?.tryCast<KotlinClassMetadata.Class>()
+                ?.toKmClass()
