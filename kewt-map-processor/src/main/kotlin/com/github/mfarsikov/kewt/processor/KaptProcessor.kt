@@ -2,16 +2,20 @@ package com.github.mfarsikov.kewt.processor
 
 import com.github.mfarsikov.kewt.annotations.Mapper
 import com.github.mfarsikov.kewt.processor.mapper.AnnotationConfig
+import com.github.mfarsikov.kewt.processor.mapper.MapperConversionFunction
+import com.github.mfarsikov.kewt.processor.mapper.MappingConversionContext
 import com.github.mfarsikov.kewt.processor.mapper.PropertyMapping
 import com.github.mfarsikov.kewt.processor.mapper.ResolvedParameter
 import com.github.mfarsikov.kewt.processor.mapper.ResolvedType
 import com.github.mfarsikov.kewt.processor.mapper.Source
 import com.github.mfarsikov.kewt.processor.mapper.calculateMappings
 import com.github.mfarsikov.kewt.processor.parser.parse
+import com.github.mfarsikov.kewt.processor.render.RenderConversionContext
 import com.github.mfarsikov.kewt.processor.render.RenderConverterClass
 import com.github.mfarsikov.kewt.processor.render.RenderConverterFunction
 import com.github.mfarsikov.kewt.processor.render.RenderPropertyMappings
 import com.github.mfarsikov.kewt.processor.render.render
+import com.github.mfarsikov.kewt.processor.render.renderInterface
 import com.github.mfarsikov.kewt.processor.render.renderExt
 import com.github.mfarsikov.kewt.processor.resolver.PropertiesResolver
 import java.time.LocalDateTime
@@ -146,7 +150,7 @@ class KewtMapperProcessor : AbstractProcessor() {
                                         explicitConverters = parsedFunction.annotationConfigs
                                                 .filter { it.converter != null }
                                                 .map { ExplicitConverter(targetName = it.target, converterName = it.converter!!) },
-                                        conversionFunctions = conversionFunctions,
+                                        conversionFunctions = conversionFunctions.map { it.toMapperConversionFunction() },
                                         returnPropertiesWithDefaultValues = returnPropertiesWithDefaultValues
                                 )
 
@@ -160,60 +164,33 @@ class KewtMapperProcessor : AbstractProcessor() {
                                 )
                             }
 
-                    val text =
-                            if (parsedInterface.isInterface) {
-                                render(
-                                        converter = RenderConverterClass(
-                                                type = parsedInterface.type,
-                                                converterFunctions = mappingsResults.map {
-                                                    RenderConverterFunction(
-                                                            name = it.name,
-                                                            returnTypeLanguage = it.returnType.language,
-                                                            parameters = it.parameters,
-                                                            returnType = it.returnType.type,
-                                                            mappings = it.mappings.map {
-                                                                RenderPropertyMappings(
-                                                                        parameterName = it.source.parameterName,
-                                                                        sourcePropertyName = it.source.path.joinToString("."),//TODO should parser see path as array? for null-safe calls?
-                                                                        targetPropertyName = it.target.name,
-                                                                        conversionContext = it.conversionContext!!
-                                                                )
-                                                            },
-                                                            targetParameterName = it.targetParameterName
-                                                    )
-                                                },
-                                                springComponent = springComponent
-                                        ),
-                                        version = version,
-                                        date = now.atOffset(ZoneOffset.UTC)
+                    val isExtensionByMapperConversionFunction = conversionFunctions.associate { it.toMapperConversionFunction() to it.isExtension }
+                    val renderConverterClass = RenderConverterClass(
+                            isInterface = parsedInterface.isInterface,
+                            version = version,
+                            date = now.atOffset(ZoneOffset.UTC),
+                            type = parsedInterface.type,
+                            converterFunctions = mappingsResults.map {
+                                RenderConverterFunction(
+                                        name = it.name,
+                                        returnTypeLanguage = it.returnType.language,
+                                        parameters = it.parameters,
+                                        returnType = it.returnType.type,
+                                        mappings = it.mappings.map {
+                                            RenderPropertyMappings(
+                                                    parameterName = it.source.parameterName,
+                                                    sourcePropertyName = it.source.path.joinToString("."),//TODO should parser see path as array? for null-safe calls?
+                                                    targetPropertyName = it.target.name,
+                                                    conversionContext = it.conversionContext!!.toRenderConversionContext(isExtensionByMapperConversionFunction[it.conversionContext.conversionFunction])
+                                            )
+                                        },
+                                        targetParameterName = it.targetParameterName
                                 )
-                            } else {
-                                renderExt(
-                                        converter = RenderConverterClass(
-                                                type = parsedInterface.type,
-                                                converterFunctions = mappingsResults.map {
-                                                    RenderConverterFunction(
-                                                            name = it.name,
-                                                            returnTypeLanguage = it.returnType.language,
-                                                            parameters = it.parameters,
-                                                            returnType = it.returnType.type,
-                                                            mappings = it.mappings.map {
-                                                                RenderPropertyMappings(
-                                                                        parameterName = it.source.parameterName,
-                                                                        sourcePropertyName = it.source.path.joinToString("."),//TODO should parser see path as array? for null-safe calls?
-                                                                        targetPropertyName = it.target.name,
-                                                                        conversionContext = it.conversionContext!!
-                                                                )
-                                                            },
-                                                            targetParameterName = it.targetParameterName
-                                                    )
-                                                },
-                                                springComponent = springComponent
-                                        ),
-                                        version = version,
-                                        date = now.atOffset(ZoneOffset.UTC)
-                                )
-                            }
+                            },
+                            springComponent = springComponent
+                    )
+
+                    val text = render(renderConverterClass )
 
                     val file = processingEnv.filer.createResource(StandardLocation.SOURCE_OUTPUT, parsedInterface.type.packageName, "${parsedInterface.type.name}Impl.kt", element)
 
@@ -277,3 +254,21 @@ data class ConversionFunction(
 ) {
     override fun toString() = "$name($parameter): $returnType"
 }
+fun ConversionFunction.toMapperConversionFunction() = MapperConversionFunction(
+        name = name,
+        parameter = parameter,
+        returnType = returnType
+)
+fun MappingConversionContext.toRenderConversionContext(isExtension: Boolean?) = RenderConversionContext(
+        conversionFunction = conversionFunction?.toConversionFunction(isExtension!!),
+        usingElementMapping = usingElementMapping,
+        usingNullSafeCall = usingNullSafeCall,
+        nullableAssignedToPlatform = nullableAssignedToPlatform
+)
+
+fun MapperConversionFunction.toConversionFunction(isExtension: Boolean) = ConversionFunction(
+        name = name,
+        parameter = parameter,
+        returnType = returnType,
+        isExtension = isExtension
+)

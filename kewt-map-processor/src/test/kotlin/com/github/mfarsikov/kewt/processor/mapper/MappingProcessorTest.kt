@@ -164,7 +164,7 @@ class MappingProcessorTest {
         val res = calculateMappings1(
                 sources = listOf(Source(parameterName = "person", path = listOf("id"), type = INT)),
                 targets = listOf(Parameter(name = "id", type = STRING)),
-                conversionFunctions = listOf(ConversionFunction(
+                conversionFunctions = listOf(MapperConversionFunction(
                         name = "f",
                         parameter = Parameter("x", type = INT),
                         returnType = STRING
@@ -185,7 +185,7 @@ class MappingProcessorTest {
         val res = calculateMappings1(
                 sources = listOf(Source(parameterName = "person", path = listOf("id"), type = INT)),
                 targets = listOf(Parameter(name = "uuid", type = STRING)),
-                conversionFunctions = listOf(ConversionFunction(
+                conversionFunctions = listOf(MapperConversionFunction(
                         name = "f",
                         parameter = Parameter("x", type = INT),
                         returnType = STRING
@@ -210,7 +210,7 @@ class MappingProcessorTest {
                 targets = listOf(
                         Parameter(name = "ids", type = Type("kotlin.collections", "List", typeParameters = listOf(STRING)))
                 ),
-                conversionFunctions = listOf(ConversionFunction(
+                conversionFunctions = listOf(MapperConversionFunction(
                         name = "f",
                         parameter = Parameter("x", type = INT),
                         returnType = STRING
@@ -392,8 +392,8 @@ class MappingProcessorTest {
                 ),
                 nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = listOf("id"), targetParameterName = "id")),
                 conversionFunctions = listOf(
-                        ConversionFunction("f", Parameter("x", STRING), INT),
-                        ConversionFunction("g", Parameter("x", STRING), INT)
+                        MapperConversionFunction("f", Parameter("x", STRING), INT),
+                        MapperConversionFunction("g", Parameter("x", STRING), INT)
                 ),
                 explicitConverters = listOf(ExplicitConverter("id", "f"))
         )
@@ -423,7 +423,7 @@ fun calculateMappings1(
         sources: List<Source>,
         targets: List<Parameter>,
         nameMappings: List<NameMapping> = emptyList(),
-        conversionFunctions: List<ConversionFunction> = emptyList(),
+        conversionFunctions: List<MapperConversionFunction> = emptyList(),
         explicitConverters: List<ExplicitConverter> = emptyList()
 ): List<PropertyMapping> {
     return calculateMappings(

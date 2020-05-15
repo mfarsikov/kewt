@@ -3,7 +3,7 @@ package com.github.mfarsikov.kewt.processor.render
 import com.github.mfarsikov.kewt.processor.ConversionFunction
 import com.github.mfarsikov.kewt.processor.Parameter
 import com.github.mfarsikov.kewt.processor.Type
-import com.github.mfarsikov.kewt.processor.mapper.ConversionContext
+import com.github.mfarsikov.kewt.processor.mapper.MappingConversionContext
 import io.kotest.matchers.shouldBe
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
@@ -18,6 +18,7 @@ class RendererKtTest {
         val res = render(
                 RenderConverterClass(
                         type = Type(packageName = "mypckg", name = "MyConveretr"),
+                        springComponent = false,
                         converterFunctions = listOf(RenderConverterFunction(
                                 name = "doconvert",
                                 returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
@@ -47,10 +48,10 @@ class RendererKtTest {
                                 ),
                                 targetParameterName = null
                         )),
-                        springComponent = false
-                ),
-                version = "v-1.0.0-SNAPSHOT",
-                date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+                        isInterface = true,
+                        version = "v-1.0.0-SNAPSHOT",
+                        date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+                )
         )
 
         @Language("kotlin")
@@ -88,12 +89,12 @@ class RendererKtTest {
             sourcePropertyName = sourceProperty,
             targetPropertyName = targetProperty,
             conversionContext = conversionFunction?.let {
-                ConversionContext(
-                        conversionFunction = ConversionFunction(it, Parameter("", INT), returnType = INT),
+                RenderConversionContext(
+                        conversionFunction = ConversionFunction(it, Parameter("", INT), returnType = INT, isExtension = false),
                         usingElementMapping = usingElementMapping
                 )
             }
-                    ?: ConversionContext()
+                    ?: RenderConversionContext()
     )
 
 
@@ -103,6 +104,7 @@ class RendererKtTest {
         val res = render(
                 RenderConverterClass(
                         type = Type(packageName = "mypckg", name = "MyConveretr"),
+                        springComponent = false,
                         converterFunctions = listOf(
                                 RenderConverterFunction(
                                         name = "convert1",
@@ -157,10 +159,10 @@ class RendererKtTest {
                                         targetParameterName = null
                                 )
                         ),
-                        springComponent = false
-                ),
-                version = "v-1.0.0-SNAPSHOT",
-                date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+                        isInterface = true,
+                        version = "v-1.0.0-SNAPSHOT",
+                        date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+                )
         )
 
 
@@ -197,6 +199,7 @@ class RendererKtTest {
         val res = render(
                 RenderConverterClass(
                         type = Type(packageName = "mypckg", name = "MyConveretr"),
+                        springComponent = false,
                         converterFunctions = listOf(RenderConverterFunction(
                                 name = "convert",
                                 returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
@@ -222,10 +225,10 @@ class RendererKtTest {
                                 ),
                                 targetParameterName = null
                         )),
-                        springComponent = false
-                ),
-                version = "v-1.0.0-SNAPSHOT",
-                date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+                        isInterface = true,
+                        version = "v-1.0.0-SNAPSHOT",
+                        date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+                )
         )
 
         @Language("kotlin")
@@ -256,6 +259,7 @@ class RendererKtTest {
         val res = render(
                 RenderConverterClass(
                         type = Type(packageName = "mypckg", name = "MyConveretr"),
+                        springComponent = true,
                         converterFunctions = listOf(RenderConverterFunction(
                                 name = "doconvert",
                                 returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.KOTLIN,
@@ -285,10 +289,10 @@ class RendererKtTest {
                                 ),
                                 targetParameterName = null
                         )),
-                        springComponent = true
-                ),
-                version = "v-1.0.0-SNAPSHOT",
-                date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+                        isInterface = true,
+                        version = "v-1.0.0-SNAPSHOT",
+                        date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+                )
         )
 
         @Language("kotlin")
@@ -322,6 +326,7 @@ class RendererKtTest {
         val res = render(
                 RenderConverterClass(
                         type = Type(packageName = "mypckg", name = "MyConveretr"),
+                        springComponent = false,
                         converterFunctions = listOf(RenderConverterFunction(
                                 name = "doconvert",
                                 returnTypeLanguage = com.github.mfarsikov.kewt.processor.mapper.Language.PROTO,
@@ -350,10 +355,10 @@ class RendererKtTest {
                                 ),
                                 targetParameterName = null
                         )),
-                        springComponent = false
-                ),
-                version = "v-1.0.0-SNAPSHOT",
-                date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+                        isInterface = true,
+                        version = "v-1.0.0-SNAPSHOT",
+                        date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+                )
         )
 
         @Language("kotlin")
@@ -391,6 +396,7 @@ class RendererKtTest {
         val res = render(
                 RenderConverterClass(
                         type = Type(packageName = "mypckg", name = "MyConveretr"),
+                        springComponent = false,
                         converterFunctions = listOf(
                                 RenderConverterFunction(
                                         name = "convert1",
@@ -430,10 +436,10 @@ class RendererKtTest {
                                         targetParameterName = "targetPerson"
                                 )
                         ),
-                        springComponent = false
-                ),
-                version = "v-1.0.0-SNAPSHOT",
-                date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+                        isInterface = true,
+                        version = "v-1.0.0-SNAPSHOT",
+                        date = OffsetDateTime.parse("2020-12-31T23:59:59Z")
+                )
         )
 
 

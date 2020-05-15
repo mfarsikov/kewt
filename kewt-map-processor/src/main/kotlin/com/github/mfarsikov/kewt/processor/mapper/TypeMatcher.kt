@@ -1,6 +1,5 @@
 package com.github.mfarsikov.kewt.processor.mapper
 
-import com.github.mfarsikov.kewt.processor.ConversionFunction
 import com.github.mfarsikov.kewt.processor.KewtException
 import com.github.mfarsikov.kewt.processor.Nullability.NON_NULLABLE
 import com.github.mfarsikov.kewt.processor.Nullability.NULLABLE
@@ -9,12 +8,12 @@ import com.github.mfarsikov.kewt.processor.Type
 
 class TypeMatcher(
         //TODO validation that there is no duplications (by input and return types)
-        private val conversionFunctions: List<ConversionFunction>
+        private val conversionFunctions: List<MapperConversionFunction>
 ) {
 
-    fun findConversion(from: Type, to: Type, explicitConverter: String? = null): ConversionContext? {
+    fun findConversion(from: Type, to: Type, explicitConverter: String? = null): MappingConversionContext? {
 
-        if (from canBeAssignedTo to) return ConversionContext()
+        if (from canBeAssignedTo to) return MappingConversionContext()
 
 
         val conversionFunctionCandidates = conversionFunctions
@@ -24,7 +23,7 @@ class TypeMatcher(
         if(conversionFunctionCandidates.size > 1) throw KewtException("More than one function can convert ($from) -> $to: $conversionFunctionCandidates")
         val conversionFunction = conversionFunctionCandidates.singleOrNull()
         return when {
-            conversionFunction != null -> ConversionContext(conversionFunction)
+            conversionFunction != null -> MappingConversionContext(conversionFunction)
             from.nullability == NULLABLE && to.nullability == NULLABLE -> findConversion(from.copy(nullability = NON_NULLABLE), to, explicitConverter)?.copy(usingNullSafeCall = true)
             from.isList() && to.isList() && (from.copy(typeParameters = emptyList()) canBeAssignedTo to.copy(typeParameters = emptyList())) -> findConversion(from.typeParameters.single(), to.typeParameters.single(), explicitConverter)
                     ?.copy(usingElementMapping = true)

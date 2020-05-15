@@ -1,7 +1,6 @@
 package com.github.mfarsikov.kewt.processor.mapper
 
 import com.github.mfarsikov.kewt.processor.AmbiguousMappingException
-import com.github.mfarsikov.kewt.processor.ConversionFunction
 import com.github.mfarsikov.kewt.processor.ExplicitConverter
 import com.github.mfarsikov.kewt.processor.KewtException
 import com.github.mfarsikov.kewt.processor.Logger
@@ -14,7 +13,7 @@ fun calculateMappings(
         targets: Set<Parameter>,
         nameMappings: List<NameMapping>,
         explicitConverters: List<ExplicitConverter>,
-        conversionFunctions: List<ConversionFunction>,
+        conversionFunctions: List<MapperConversionFunction>,
         returnPropertiesWithDefaultValues: Set<String>
 ): List<PropertyMapping> {
 
@@ -179,7 +178,7 @@ data class Source(
 data class PropertyMapping(
         val source: Source,
         val target: Parameter,
-        val conversionContext: ConversionContext? = null
+        val conversionContext: MappingConversionContext? = null
 ) {
     override fun toString() = "$target <= $source, $conversionContext"
 }
@@ -191,11 +190,19 @@ data class AnnotationConfig(
 )
 
 
-data class ConversionContext(
-        val conversionFunction: ConversionFunction? = null,
+data class MappingConversionContext(
+        val conversionFunction: MapperConversionFunction? = null,
         val usingElementMapping: Boolean = false,
         val usingNullSafeCall: Boolean = false,
         val nullableAssignedToPlatform: Boolean = false
 ) {
     override fun toString() = "using elvis: $usingNullSafeCall, element mapping: $usingElementMapping, ${conversionFunction?.let { ", func: $it" } ?: ""}"
+}
+
+data class MapperConversionFunction(
+        val name: String,
+        val parameter: Parameter,
+        val returnType: Type
+) {
+    override fun toString() = "$name($parameter): $returnType"
 }

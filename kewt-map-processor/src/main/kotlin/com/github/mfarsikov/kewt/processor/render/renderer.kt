@@ -3,7 +3,6 @@ package com.github.mfarsikov.kewt.processor.render
 import com.github.mfarsikov.kewt.processor.ConversionFunction
 import com.github.mfarsikov.kewt.processor.Parameter
 import com.github.mfarsikov.kewt.processor.Type
-import com.github.mfarsikov.kewt.processor.mapper.ConversionContext
 import com.github.mfarsikov.kewt.processor.mapper.Language
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -15,7 +14,22 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.TypeSpec
 import java.time.OffsetDateTime
 
-fun render(converter: RenderConverterClass, version: String, date: OffsetDateTime): String {
+fun render(converter: RenderConverterClass): String = if (converter.isInterface) {
+    renderInterface(
+            converter = converter,
+            version = converter.version,
+            date = converter.date
+    )
+} else {
+    renderExt(
+            converter = converter,
+            version = converter.version,
+            date = converter.date
+    )
+}
+
+
+fun renderInterface(converter: RenderConverterClass, version: String, date: OffsetDateTime): String {
     val fsb = FileSpec.builder(converter.type.packageName, converter.type.name)
     val classBuilder = TypeSpec.classBuilder("${converter.type.name}Impl")
     classBuilder.addSuperinterface(ClassName(converter.type.packageName, converter.type.name))
@@ -120,7 +134,10 @@ fun generateKotlinConstructorCall(type: Type, mappings: List<RenderPropertyMappi
 data class RenderConverterClass(
         val type: Type,
         val springComponent: Boolean,
-        val converterFunctions: List<RenderConverterFunction>
+        val converterFunctions: List<RenderConverterFunction>,
+        val isInterface: Boolean,
+        val version: String,
+        val date: OffsetDateTime
 )
 
 data class RenderConverterFunction(
@@ -136,5 +153,12 @@ data class RenderPropertyMappings(
         val parameterName: String,
         val sourcePropertyName: String,
         val targetPropertyName: String,
-        val conversionContext: ConversionContext
+        val conversionContext: RenderConversionContext
+)
+
+data class RenderConversionContext(
+        val conversionFunction: ConversionFunction? = null,
+        val usingElementMapping: Boolean = false,
+        val usingNullSafeCall: Boolean = false,
+        val nullableAssignedToPlatform: Boolean = false
 )

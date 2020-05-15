@@ -35,7 +35,7 @@ class TypeMatcherTest {
         }
     }
 
-    private fun f(from: Type, to: Type, funcParam: Type, returnType: Type): ConversionContext? = TypeMatcher(listOf(ConversionFunction(
+    private fun f(from: Type, to: Type, funcParam: Type, returnType: Type): MappingConversionContext? = TypeMatcher(listOf(MapperConversionFunction(
             name = "f",
             parameter = Parameter(name = "x", type = funcParam),
             returnType = returnType

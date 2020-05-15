@@ -1,5 +1,6 @@
 package com.github.mfarsikov.kewt.processor
 
+import com.github.mfarsikov.kewt.processor.mapper.MapperConversionFunction
 import com.github.mfarsikov.kewt.processor.mapper.TypeMatcher
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -9,7 +10,7 @@ class TypeMatcherTest extends Specification {
     @Unroll
     def "using conversion function #n"(int n, String from, String funcParam, String returnType, String to, Boolean success) {
         expect:
-        def res = new TypeMatcher([new ConversionFunction(
+        def res = new TypeMatcher([new MapperConversionFunction(
                 "f",
                 new Parameter("x", toType(funcParam)),
                 toType(returnType)
