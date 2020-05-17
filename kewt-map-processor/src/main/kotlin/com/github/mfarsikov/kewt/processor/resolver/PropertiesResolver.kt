@@ -165,7 +165,7 @@ class PropertiesResolver(
 private fun java.lang.reflect.Type.toType(): Type =
         when (this) {
             is ParameterizedTypeImpl -> Type(
-                    packageName = this.rawType.`package`.name,
+                    packageName = rawType.`package`.name,
                     name = rawType.simpleName,
                     nullability = Nullability.PLATFORM,
                     typeParameters = actualTypeArguments.map { it.toType() }

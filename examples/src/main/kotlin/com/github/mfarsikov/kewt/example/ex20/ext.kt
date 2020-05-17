@@ -1,7 +1,6 @@
 @file:Mapper
 package com.github.mfarsikov.kewt.example.ex20
 
-import com.github.mfarsikov.kewt.annotations.Isomorphism
 import com.github.mfarsikov.kewt.annotations.Mapper
 
 data class Person(val name: String)
