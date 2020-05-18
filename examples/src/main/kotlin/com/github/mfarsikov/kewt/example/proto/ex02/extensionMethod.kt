@@ -10,7 +10,6 @@ import protohub.Employee
 import protohub.ID
 import protohub.Passport
 import protohub.Person
-import java.util.*
 
 
 @Mappings([
@@ -20,3 +19,8 @@ import java.util.*
 lateinit var convert: Person.() -> Employee
 fun intToString(x: Int) = x.toString()
 lateinit var toId: Passport.() -> ID
+
+
+data class MyEmployee(val ids: List<String>)
+
+lateinit var toMyEmployee: Employee.() -> MyEmployee

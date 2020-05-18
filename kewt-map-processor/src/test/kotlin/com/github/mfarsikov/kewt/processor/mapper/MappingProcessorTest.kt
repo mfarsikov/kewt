@@ -1,10 +1,10 @@
 package com.github.mfarsikov.kewt.processor.mapper
 
 import com.github.mfarsikov.kewt.processor.AmbiguousMappingException
-import com.github.mfarsikov.kewt.processor.ConversionFunction
 import com.github.mfarsikov.kewt.processor.ExplicitConverter
 import com.github.mfarsikov.kewt.processor.KewtException
 import com.github.mfarsikov.kewt.processor.NameMapping
+import com.github.mfarsikov.kewt.processor.Nullability
 import com.github.mfarsikov.kewt.processor.Parameter
 import com.github.mfarsikov.kewt.processor.Type
 import io.kotest.assertions.throwables.shouldThrow
@@ -415,6 +415,26 @@ class MappingProcessorTest {
             source.parameterName shouldBe "age"
             source.path shouldBe emptyList()
             target.name shouldBe "age"
+        }
+    }
+
+    @Test
+    fun `map java list of strings to kotlin`() {
+        val res = calculateMappings1(
+                sources = listOf(
+                        Source(parameterName = "person", path = listOf("ids"), type = Type(packageName = "java.util", name = "List", nullability = Nullability.PLATFORM, typeParameters = listOf(Type(packageName = "java.lang", name = "String", nullability = Nullability.PLATFORM))))
+                ),
+                targets = listOf(
+                        Parameter(name = "ids", type = Type(packageName = "kotlin.collections", name = "List", typeParameters = listOf(STRING)))
+                )
+        )
+        with(res.single()){
+            source.parameterName shouldBe "person"
+            source.path shouldBe listOf("ids")
+            target.name shouldBe "ids"
+            with(conversionContext!!){
+                usingElementMapping shouldBe false
+            }
         }
     }
 }

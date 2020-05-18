@@ -2,12 +2,13 @@ package com.github.mfarsikov.kewt.example.proto.ex02
 
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
+import protohub.Employee
 import protohub.Passport
 import protohub.Person
 
 class Ex02Test {
     @Test
-   fun test(){
+    fun test() {
         val person = Person.newBuilder().apply {
             name = nameBuilder.apply {
                 name = "John"
@@ -39,5 +40,12 @@ class Ex02Test {
             }
             identitiesList.single().id shouldBe "ID"
         }
+    }
+
+    @Test
+    fun `map list of java strings to list of kotlin strings`() {
+        val res = Employee.newBuilder().addAllIds(listOf("1", "2", "3")).build().toMyEmployee()
+
+        res.ids shouldBe listOf("1", "2", "3")
     }
 }

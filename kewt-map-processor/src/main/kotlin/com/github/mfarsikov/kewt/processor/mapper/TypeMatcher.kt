@@ -37,7 +37,7 @@ class TypeMatcher(
     private infix fun Type.canBeAssignedTo(type: Type): Boolean =
             (type.qualifiedName() in aliases[this.qualifiedName()] ?: listOf(this.qualifiedName()))
                     && (this.nullability == NON_NULLABLE || type.nullability == NULLABLE || type.nullability == PLATFORM || this.nullability == PLATFORM)
-                    && this.typeParameters == type.typeParameters //TODO variance
+                    && this.typeParameters.zip( type.typeParameters).all { (a,b) -> a canBeAssignedTo b } //TODO variance?
 }
 
 val aliases = listOf(

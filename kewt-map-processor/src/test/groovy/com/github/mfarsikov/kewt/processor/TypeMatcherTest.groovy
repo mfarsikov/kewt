@@ -46,7 +46,10 @@ class TypeMatcherTest extends Specification {
                 toType(to),
                 null
         )
+
         (res != null) == success
+        and: 'colelction element mapping is not used'
+        res == null || !res.usingElementMapping
 
         where:
         n  | from                                   | to                                            | success
@@ -71,6 +74,7 @@ class TypeMatcherTest extends Specification {
         19 | "java.lang.String!"                    | "java.lang.Integer!"                          | false
         20 | "java.lang.String!"                    | "java.lang.String!"                           | true
         21 | "long!"                                | "long!"                                       | true
+        22 | "java.util.List<java.lang.String!>!"   | "kotlin.collections.List<kotlin.String>"      | true
     }
 
     static Type toType(String s) {
