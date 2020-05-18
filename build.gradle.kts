@@ -1,4 +1,5 @@
-import com.github.mfarsikov.kewt.versioning.plugin.Incrementer.*
+import com.github.mfarsikov.kewt.versioning.plugin.Incrementer.MINOR
+import com.github.mfarsikov.kewt.versioning.plugin.Incrementer.PATCH
 
 plugins {
     kotlin("jvm") version "1.3.71" apply false
@@ -10,8 +11,8 @@ repositories {
     mavenLocal()
     mavenCentral()
 }
-kewtVersioning{
-    configuration{
+kewtVersioning {
+    configuration {
         branches {
             clear()
             add {
@@ -21,7 +22,7 @@ kewtVersioning{
             }
             add {
                 regexes = mutableListOf("fix/.*".toRegex())
-                incrementer =  PATCH
+                incrementer = PATCH
                 stringify = stringifier(useSha = false, useTimestamp = false)
             }
             add {
