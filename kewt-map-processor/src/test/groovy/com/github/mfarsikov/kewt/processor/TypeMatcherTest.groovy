@@ -8,7 +8,7 @@ import spock.lang.Unroll
 class TypeMatcherTest extends Specification {
 
     @Unroll
-    def "using conversion function #n"(int n, String from, String funcParam, String returnType, String to, Boolean success, Boolean elementMapping) {
+    def "using conversion function #n"(int n, String from, String funcParam, String returnType, String to, Boolean success, Boolean elementMapping, Boolean nullSafe) {
         expect:
         def res = new TypeMatcher([new MapperConversionFunction(
                 "f",
@@ -22,22 +22,24 @@ class TypeMatcherTest extends Specification {
 
         (res != null) == success
         res == null || res.usingElementMapping == elementMapping
+        res == null || res.usingNullSafeCall == nullSafe
 
         where:
-        n  | from                                      | funcParam                                           | returnType                                       | to                                               | success | elementMapping
-        1  | "kotlin.String"                           | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.Int"                                     | true    | false
-        2  | "kotlin.String"                           | "kotlin.String?"                                    | "kotlin.Int"                                     | "kotlin.Int"                                     | true    | false
-        3  | "kotlin.String"                           | "kotlin.String?"                                    | "kotlin.Int?"                                    | "kotlin.Int"                                     | false   | false
-        4  | "kotlin.String?"                          | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.Int"                                     | false   | false
-        5  | "kotlin.String?"                          | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.Int?"                                    | true    | false
-        6  | "kotlin.String?"                          | "kotlin.String"                                     | "kotlin.Int?"                                    | "kotlin.Int"                                     | false   | false
-        7  | "kotlin.String?"                          | "kotlin.String?"                                    | "kotlin.Int?"                                    | "kotlin.Int"                                     | false   | false
-        8  | "kotlin.String?"                          | "kotlin.String?"                                    | "kotlin.Int"                                     | "kotlin.Int?"                                    | true    | false
-        9  | "kotlin.String?"                          | "kotlin.String?"                                    | "kotlin.Int?"                                    | "kotlin.Int?"                                    | true    | false
-        10 | "kotlin.collections.List<kotlin.String>"  | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.collections.List<kotlin.Int>"            | true    | true
-        11 | "kotlin.collections.List<kotlin.String>?" | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.collections.List<kotlin.Int>?"           | true    | true
-        12 | "kotlin.collections.List<kotlin.String>?" | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.collections.List<kotlin.Int>"            | false   | false
-        12 | "java.util.Map<java.lang.String!, int!>"  | "kotlin.collections.Map<kotlin.String, kotlin.Int>" | "kotlin.collections.Map<kotlin.Int, kotlin.Int>" | "kotlin.collections.Map<kotlin.Int, kotlin.Int>" | true    | false
+        n  | from                                      | funcParam                                           | returnType                                       | to                                               | success | elementMapping | nullSafe
+        1  | "kotlin.String"                           | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.Int"                                     | true    | false          | false
+        2  | "kotlin.String"                           | "kotlin.String?"                                    | "kotlin.Int"                                     | "kotlin.Int"                                     | true    | false          | false
+        3  | "kotlin.String"                           | "kotlin.String?"                                    | "kotlin.Int?"                                    | "kotlin.Int"                                     | false   | false          | false
+        4  | "kotlin.String?"                          | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.Int"                                     | false   | false          | false
+        5  | "kotlin.String?"                          | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.Int?"                                    | true    | false          | true
+        6  | "kotlin.String?"                          | "kotlin.String"                                     | "kotlin.Int?"                                    | "kotlin.Int"                                     | false   | false          | false
+        7  | "kotlin.String?"                          | "kotlin.String?"                                    | "kotlin.Int?"                                    | "kotlin.Int"                                     | false   | false          | false
+        8  | "kotlin.String?"                          | "kotlin.String?"                                    | "kotlin.Int"                                     | "kotlin.Int?"                                    | true    | false          | false
+        9  | "kotlin.String?"                          | "kotlin.String?"                                    | "kotlin.Int?"                                    | "kotlin.Int?"                                    | true    | false          | false
+        10 | "kotlin.collections.List<kotlin.String>"  | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.collections.List<kotlin.Int>"            | true    | true           | false
+        11 | "kotlin.collections.List<kotlin.String>?" | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.collections.List<kotlin.Int>?"           | true    | true           | true //TODO two safe operators: ?.map { it?.let{f(it)}}
+        12 | "kotlin.collections.List<kotlin.String>?" | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.collections.List<kotlin.Int>"            | false   | false          | false
+        12 | "java.util.Map<java.lang.String!, int!>"  | "kotlin.collections.Map<kotlin.String, kotlin.Int>" | "kotlin.collections.Map<kotlin.Int, kotlin.Int>" | "kotlin.collections.Map<kotlin.Int, kotlin.Int>" | true    | false          | false
+        13 | "kotlin.String?"                          | "kotlin.String"                                     | "kotlin.Int"                                     | "kotlin.Int!"                                    | true    | false          | true
     }
 
     @Unroll

@@ -24,7 +24,7 @@ class TypeMatcher(
         val conversionFunction = conversionFunctionCandidates.singleOrNull()
         return when {
             conversionFunction != null -> MappingConversionContext(conversionFunction)
-            from.nullability == NULLABLE && to.nullability == NULLABLE -> findConversion(from.copy(nullability = NON_NULLABLE), to, explicitConverter)?.copy(usingNullSafeCall = true)
+            from.nullability == NULLABLE && (to.nullability == NULLABLE || to.nullability == PLATFORM) -> findConversion(from.copy(nullability = NON_NULLABLE), to, explicitConverter)?.copy(usingNullSafeCall = true)
             from.isList() && to.isList() && (from.copy(typeParameters = emptyList()) canBeAssignedTo to.copy(typeParameters = emptyList())) -> findConversion(from.typeParameters.single(), to.typeParameters.single(), explicitConverter)
                     ?.copy(usingElementMapping = true)
             else -> null

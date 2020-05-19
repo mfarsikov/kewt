@@ -75,14 +75,14 @@ class PropertiesResolver(
 
                     val gettersForExclusion = getters.map { "${it.name}Bytes" }.toSet() +
                             getters.filter { it.name.endsWith("List") }.map { it.name.substringBefore("List") + "Count" } +
-                            getters.filter { it.name.endsWith("Map") }.map { it.name.substringBefore("Map") + "Count" } +
+                            getters.filter { it.name.endsWith("Map") }.flatMap { listOf(
+                                    it.name.substringBefore("Map") + "Count",
+                                    it.name.substringBeforeLast("Map")
+                            ) } +
                             getters.map {
                                 val listSuffix = if (it.name.endsWith("List")) "List" else ""
                                 val name = it.name.substringBeforeLast("List")
                                 "${name}OrBuilder${listSuffix}"
-                            } +
-                            getters.filter { it.name.endsWith("Map") }.flatMap {
-                                listOf(it.name + "Count", it.name.substringBeforeLast("Map"))
                             }
 
                     val realGetters = getters.filter { it.name !in gettersForExclusion }
