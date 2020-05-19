@@ -192,7 +192,7 @@ class KewtMapperProcessor : AbstractProcessor() {
                 conversionFunctions = conversionFunctions.map { it.toMapperConversionFunction() },
                 returnPropertiesWithDefaultValues = returnPropertiesWithDefaultValues
         )
-        Logger.trace("Inferred mappings: $mappings")
+        Logger.debug("Inferred mappings: $mappings")
 
         return MappedFunction(
                 name = parsedFunction.name,

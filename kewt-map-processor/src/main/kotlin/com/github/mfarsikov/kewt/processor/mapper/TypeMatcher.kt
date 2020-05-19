@@ -20,7 +20,7 @@ class TypeMatcher(
                 .filter { explicitConverter == null || it.name == explicitConverter }
                 .filter { from canBeAssignedTo it.parameter.type && it.returnType canBeAssignedTo to }
 
-        if(conversionFunctionCandidates.size > 1) throw KewtException("More than one function can convert ($from) -> $to: $conversionFunctionCandidates")
+        if (conversionFunctionCandidates.size > 1) throw KewtException("More than one function can convert ($from) -> $to: $conversionFunctionCandidates")
         val conversionFunction = conversionFunctionCandidates.singleOrNull()
         return when {
             conversionFunction != null -> MappingConversionContext(conversionFunction)
@@ -37,7 +37,7 @@ class TypeMatcher(
     private infix fun Type.canBeAssignedTo(type: Type): Boolean =
             (type.qualifiedName() in aliases[this.qualifiedName()] ?: listOf(this.qualifiedName()))
                     && (this.nullability == NON_NULLABLE || type.nullability == NULLABLE || type.nullability == PLATFORM || this.nullability == PLATFORM)
-                    && this.typeParameters.zip( type.typeParameters).all { (a,b) -> a canBeAssignedTo b } //TODO variance?
+                    && this.typeParameters.zip(type.typeParameters).all { (a, b) -> a canBeAssignedTo b } //TODO variance?
 }
 
 val aliases = listOf(
@@ -47,7 +47,8 @@ val aliases = listOf(
         listOf("kotlin.Float", "java.lang.Float", "float"),
         listOf("kotlin.String", "java.lang.String"),
         listOf("kotlin.Boolean", "java.lang.Boolean", "boolean"),
-        listOf("kotlin.collections.List", "java.util.List")
+        listOf("kotlin.collections.List", "kotlin.collections.MutableList", "java.util.List"),
+        listOf("kotlin.collections.Map", "kotlin.collections.MutableMap", "java.util.Map")
 ).flatMap { list ->
     list.flatMap { item ->
         list.map { it to item }

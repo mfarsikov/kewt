@@ -91,6 +91,8 @@ private fun generateProtobufBuilderCall(returnType: Type, mappings: List<RenderP
                         } +
                         if (it.targetPropertyName.endsWith("List")) {
                             "?.also { addAll${it.targetPropertyName.capitalize().substringBefore("List")}(it) }"
+                        } else if (it.targetPropertyName.endsWith("Map")) {
+                            "?.also { putAll${it.targetPropertyName.capitalize().substringBefore("Map")}(it) }"
                         } else {
                             "?.also { ${it.targetPropertyName} = it }"
                         }

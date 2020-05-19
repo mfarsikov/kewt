@@ -72,6 +72,8 @@ private fun generateProtobufBuilderCall(fname: String, returnType: Type, mapping
                         } +
                         if (it.targetPropertyName.endsWith("List")) {
                             "?.also { addAll${it.targetPropertyName.capitalize().substringBefore("List")}(it) }"
+                        } else if (it.targetPropertyName.endsWith("Map")) {
+                            "?.also { putAll${it.targetPropertyName.capitalize().substringBefore("Map")}(it) }"
                         } else {
                             "?.also { ${it.targetPropertyName} = it }"
                         }

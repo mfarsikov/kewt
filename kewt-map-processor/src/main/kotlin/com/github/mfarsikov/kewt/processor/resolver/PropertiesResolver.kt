@@ -73,15 +73,19 @@ class PropertiesResolver(
                             .filter { it.parameterCount == 0 && !it.isSynthetic }
                             .filter { it.name !in protoFields }
 
-                    val anotherProtoFields = getters.map { "${it.name}Bytes" }.toSet() +
+                    val gettersForExclusion = getters.map { "${it.name}Bytes" }.toSet() +
                             getters.filter { it.name.endsWith("List") }.map { it.name.substringBefore("List") + "Count" } +
+                            getters.filter { it.name.endsWith("Map") }.map { it.name.substringBefore("Map") + "Count" } +
                             getters.map {
                                 val listSuffix = if (it.name.endsWith("List")) "List" else ""
                                 val name = it.name.substringBeforeLast("List")
                                 "${name}OrBuilder${listSuffix}"
+                            } +
+                            getters.filter { it.name.endsWith("Map") }.flatMap {
+                                listOf(it.name + "Count", it.name.substringBeforeLast("Map"))
                             }
 
-                    val realGetters = getters.filter { it.name !in anotherProtoFields }
+                    val realGetters = getters.filter { it.name !in gettersForExclusion }
                     val properties = realGetters.map {
                         ConstructorParameter(
                                 name = it.name.convertFromGetter(),
@@ -112,12 +116,12 @@ class PropertiesResolver(
                         .constructors.single { Flag.Constructor.IS_PRIMARY.invoke(it.flags) }
                         .valueParameters
                         .map {//TODO fallback to java if km is null?
-                    ConstructorParameter(
-                            name = it.name,
-                            type = it.type!!.toType(),
-                            hasDefaultValue = Flag.ValueParameter.DECLARES_DEFAULT_VALUE.invoke(it.flags)
-                    )
-                }
+                            ConstructorParameter(
+                                    name = it.name,
+                                    type = it.type!!.toType(),
+                                    hasDefaultValue = Flag.ValueParameter.DECLARES_DEFAULT_VALUE.invoke(it.flags)
+                            )
+                        }
                 ResolvedType(
                         type = type,
                         properties = properties.toSet(),

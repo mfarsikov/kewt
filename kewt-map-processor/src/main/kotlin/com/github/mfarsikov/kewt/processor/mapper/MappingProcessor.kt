@@ -17,7 +17,7 @@ fun calculateMappings(
         returnPropertiesWithDefaultValues: Set<String>
 ): List<PropertyMapping> {
 
-    Logger.trace("Mapping input: sources=$sources, targets=$targets, nameMappings=$nameMappings, explicitConverters=$explicitConverters, conversionFunctions=$conversionFunctions")
+    Logger.debug("Mapping input: sources=$sources, targets=$targets, nameMappings=$nameMappings, explicitConverters=$explicitConverters, conversionFunctions=$conversionFunctions")
 
 
     //TODO move validation out of mapping calculations
