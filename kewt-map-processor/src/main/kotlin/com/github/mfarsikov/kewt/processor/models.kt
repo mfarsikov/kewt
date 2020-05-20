@@ -25,7 +25,9 @@ data class FunctionParameter(
         val name: String,
         val type: Type,
         val isTarget: Boolean
-)
+){
+    override fun toString() = toParameter().toString()
+}
 
 fun FunctionParameter.toParameter() = Parameter(name, type)
 

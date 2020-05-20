@@ -5,6 +5,7 @@ import com.github.mfarsikov.kewt.processor.ExplicitConverter
 import com.github.mfarsikov.kewt.processor.KewtException
 import com.github.mfarsikov.kewt.processor.Logger
 import com.github.mfarsikov.kewt.processor.NameMapping
+import com.github.mfarsikov.kewt.processor.NotMappedTarget
 import com.github.mfarsikov.kewt.processor.Parameter
 import com.github.mfarsikov.kewt.processor.Type
 
@@ -117,7 +118,7 @@ fun calculateMappings(
 
     val notMappedTargets = t.filter { it !in k2 && it.name !in returnPropertiesWithDefaultValues }
 
-    if (notMappedTargets.isNotEmpty()) throw KewtException("Not mapped targets: ${notMappedTargets}")
+    if (notMappedTargets.isNotEmpty()) throw NotMappedTarget(notMappedTargets)
 
     return explicitMappings + matchedByName + mappedByType
 }

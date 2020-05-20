@@ -80,7 +80,7 @@ class KewtMapperProcessor : AbstractProcessor() {
 
                     val mappingsResults = parsedInterface.functions
                             .filter { it.abstract }
-                            .map { abstractConverterFunction -> mapFunction(abstractConverterFunction, propertiesResolver, auxConversionFunctions) }
+                            .map { abstractConverterFunction -> mapFunction(abstractConverterFunction, propertiesResolver, auxConversionFunctions, parsedInterface.type.toString()) }
 
                     val text = render(toRenderConverterClass(
                             auxConversionFunctions,
@@ -93,6 +93,8 @@ class KewtMapperProcessor : AbstractProcessor() {
                     val file = processingEnv.filer.createResource(StandardLocation.SOURCE_OUTPUT, parsedInterface.type.packageName, "${parsedInterface.type.name}Impl.kt", element)
 
                     file.openWriter().use { it.write(text) }
+                }catch (ex: NotMappedTarget){
+                    //ignore
                 } catch (ex: KewtException) {
                     Logger.error(ex, "Cannot process ${element.simpleName}: ${ex.message}")
                 }
@@ -142,7 +144,13 @@ class KewtMapperProcessor : AbstractProcessor() {
         return renderConverterClass
     }
 
-    private fun mapFunction(parsedFunction: Function, propertiesResolver: PropertiesResolver, conversionFunctions: List<ConversionFunction>): MappedFunction {
+    private fun mapFunction(
+            parsedFunction: Function,
+            propertiesResolver: PropertiesResolver,
+            conversionFunctions: List<ConversionFunction>,
+            cls: String
+    ): MappedFunction {
+
         Logger.debug("Abstract function: $parsedFunction")
         val nameMappings = normalizeNames(parsedFunction.parameters.map { it.toParameter() }, parsedFunction.annotationConfigs)
 
@@ -181,17 +189,52 @@ class KewtMapperProcessor : AbstractProcessor() {
         val sources = resolvedSources.flatMap { it.resolvedType.properties } +
                 parsedFunction.parameters.map { Source(it.name, path = emptyList(), type = it.type) }
 
+        val targets = resolvedReturnType.properties.map { Parameter(it.name, it.type) }.toSet()
 
-        val mappings = calculateMappings(
-                sources = sources,
-                targets = resolvedReturnType.properties.map { Parameter(it.name, it.type) }.toSet(),
-                nameMappings = nameMappings,
-                explicitConverters = parsedFunction.annotationConfigs
-                        .filter { it.converter != null }
-                        .map { ExplicitConverter(targetName = it.target, converterName = it.converter!!) },
-                conversionFunctions = conversionFunctions.map { it.toMapperConversionFunction() },
-                returnPropertiesWithDefaultValues = returnPropertiesWithDefaultValues
-        )
+        val explicitConverters = parsedFunction.annotationConfigs
+                .filter { it.converter != null }
+                .map { ExplicitConverter(targetName = it.target, converterName = it.converter!!) }
+        val conversionFunctions1 = conversionFunctions.map { it.toMapperConversionFunction() }
+        val mappings = try {
+            calculateMappings(
+                    sources = sources,
+                    targets = targets,
+                    nameMappings = nameMappings,
+                    explicitConverters = explicitConverters,
+                    conversionFunctions = conversionFunctions1,
+                    returnPropertiesWithDefaultValues = returnPropertiesWithDefaultValues
+            )
+        } catch (ex: AmbiguousMappingException) {
+            throw ex
+        } catch (ex: NotMappedTarget) {
+
+
+            val s = """
+               |notMappedTargets=[
+               |    ${ex.notMappedTargets.joinToString(",\n|    ")} 
+               |]
+               |class=$cls
+               |function=$parsedFunction,
+               |sources=[
+               |    ${sources.joinToString(",\n|    ")}
+               |],
+               |targets=[
+               |    ${targets.joinToString(",\n|    ")}
+               |],
+               |nameMappings=[
+               |    ${nameMappings.joinToString(",\n|    ")}
+               |],
+               |explicitConverters=[ 
+               |    ${explicitConverters.joinToString(",\n|    ")}
+               |],
+               |conversionFunctions=[
+               |    ${conversionFunctions1.joinToString(",\n|    ")}
+               |]
+            """.trimMargin()
+            Logger.error(s)
+            throw ex
+        }
+        //TODO catch not mapped and ambiguous mapping and log method name
         Logger.debug("Inferred mappings: $mappings")
 
         return MappedFunction(
