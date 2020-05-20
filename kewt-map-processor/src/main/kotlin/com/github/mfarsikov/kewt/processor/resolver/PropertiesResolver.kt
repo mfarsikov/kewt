@@ -11,7 +11,9 @@ import com.github.mfarsikov.kewt.processor.extractPackage
 import com.github.mfarsikov.kewt.processor.mapper.Language
 import com.github.mfarsikov.kewt.processor.mapper.ResolvedType
 import com.github.mfarsikov.kewt.processor.mapper.Source
+import com.github.mfarsikov.kewt.processor.parser.SimpleType
 import com.github.mfarsikov.kewt.processor.parser.tryCast
+import com.github.mfarsikov.kewt.processor.toSimpleType
 import com.github.mfarsikov.kewt.processor.toType
 import com.google.protobuf.GeneratedMessageV3
 import kotlinx.metadata.Flag
@@ -28,7 +30,7 @@ class PropertiesResolver(
         roundEnvironment: RoundEnvironment,
         private val processingEnv: ProcessingEnvironment
 ) {
-    private val cache: MutableMap<String, ResolvedType<ConstructorParameter>> = mutableMapOf(*types)
+    private val cache: MutableMap<SimpleType, Properties> = types.toMutableMap()
 
     private val elementsByQualifiedName: Map<String, Element> = roundEnvironment.rootElements.associateBy {
         "${processingEnv.elementUtils.getPackageOf(it).qualifiedName}.${it.simpleName}"
@@ -44,7 +46,7 @@ class PropertiesResolver(
 
 
     @Synchronized
-    fun resolveType(type: Type): ResolvedType<ConstructorParameter> = cache.computeIfAbsent(type.qualifiedName()) {
+    fun resolveType(type: Type): ResolvedType<ConstructorParameter> = cache.computeIfAbsent(type.toSimpleType()) {
         Logger.trace("Resolving type: $type")
 
         val element = elementsByQualifiedName["${type.packageName}.${type.name}"]
@@ -75,10 +77,12 @@ class PropertiesResolver(
 
                     val gettersForExclusion = getters.map { "${it.name}Bytes" }.toSet() +
                             getters.filter { it.name.endsWith("List") }.map { it.name.substringBefore("List") + "Count" } +
-                            getters.filter { it.name.endsWith("Map") }.flatMap { listOf(
-                                    it.name.substringBefore("Map") + "Count",
-                                    it.name.substringBeforeLast("Map")
-                            ) } +
+                            getters.filter { it.name.endsWith("Map") }.flatMap {
+                                listOf(
+                                        it.name.substringBefore("Map") + "Count",
+                                        it.name.substringBeforeLast("Map")
+                                )
+                            } +
                             getters.map {
                                 val listSuffix = if (it.name.endsWith("List")) "List" else ""
                                 val name = it.name.substringBeforeLast("List")
@@ -93,8 +97,7 @@ class PropertiesResolver(
                                 hasDefaultValue = false //TODO proto3 all fields optional
                         )
                     }
-                    ResolvedType(
-                            type = type,
+                    Properties(
                             properties = properties.toSet(),
                             language = Language.PROTO
                     )
@@ -102,8 +105,7 @@ class PropertiesResolver(
                     Logger.debug("Java class: ${type.qualifiedName()} ")
                     val properties: List<ConstructorParameter> = TODO()
                     //JAVA
-                    ResolvedType(
-                            type = type,
+                    Properties(
                             properties = properties.toSet(),
                             language = Language.JAVA
                     )
@@ -122,8 +124,7 @@ class PropertiesResolver(
                                     hasDefaultValue = Flag.ValueParameter.DECLARES_DEFAULT_VALUE.invoke(it.flags)
                             )
                         }
-                ResolvedType(
-                        type = type,
+                Properties(
                         properties = properties.toSet(),
                         language = Language.KOTLIN
                 )
@@ -140,14 +141,13 @@ class PropertiesResolver(
                                 hasDefaultValue = Flag.ValueParameter.DECLARES_DEFAULT_VALUE.invoke(it.flags)
                         )
                     }
-            ResolvedType(
-                    type = type,
+            Properties(
                     properties = properties.toSet(),
                     language = Language.KOTLIN
             )
 
         }.also { Logger.debug("Resolved type: $it") }
-    }
+    }.let { ResolvedType(type = type, properties = it.properties, language = it.language) }
 
     private fun loadFromLibrary(type: Type): Class<*> = try {
         Logger.trace("Trying to load from library: ${type.packageName}.${type.name}")
@@ -157,7 +157,7 @@ class PropertiesResolver(
         throw KewtException("$type", ex)
     }
 
-    fun findType(nestedSourceNames: List<String>, type: Type): Type? =
+    private fun findType(nestedSourceNames: List<String>, type: Type): Type? =
             nestedSourceNames.fold(type) { typet: Type?, name ->
                 typet?.let { resolveType(typet) }
                         ?.properties
@@ -193,38 +193,37 @@ private fun java.lang.reflect.Type.toType(): Type =
                 )
         }
 
-
-private fun <T> Class<T>.toType() = Type(
-        packageName = canonicalName.extractPackage(),
-        name = canonicalName.substringAfterLast("."),
-        nullability = Nullability.PLATFORM,//TODO read non-null annotations?
-        typeParameters = emptyList()
+private data class Properties(
+        val properties: Set<ConstructorParameter>,
+        val language: Language
 )
 
 private fun String.convertFromGetter() = substringAfter("get").decapitalize()
-private val cache: MutableMap<Type, ResolvedType<Parameter>> = mutableMapOf()
 
-val types = listOf(//TODO check could it be skipped
+private val types = listOf(//TODO check could it be skipped
         Type("kotlin", "String"),
         Type("kotlin", "Long"),
         Type("kotlin", "Int"),
         Type("kotlin", "Double"),
         Type("kotlin", "Float"),
         Type("kotlin", "Boolean"),
-        Type("java.util", "UUID")
+        Type("java.util", "UUID"),
+        Type("kotlin.collections", "List"),
+        Type("kotlin.collections", "MutableList"),
+        Type("kotlin.collections", "MutableMap"),
+        Type("kotlin.collections", "Map"),
+        Type("java.util", "Map"),
+        Type("java.util", "List")
 ).map {
-    ResolvedType<ConstructorParameter>(
-            type = it,
-            properties = emptySet(),
-            language = Language.KOTLIN
-    )
+    it.toSimpleType() to
+            Properties(
+                    properties = emptySet(),
+                    language = Language.KOTLIN
+            )
 }
-        .map { it.type.qualifiedName() to it }
-        .toTypedArray()
+        .toMap()
 
-data class A(val x: String = "X", val y: Int, val z: Boolean = true)
-
-fun Metadata.kmClass(): KmClass? =
+private fun Metadata.kmClass(): KmClass? =
         let {
             KotlinClassHeader(
                     it.kind,

@@ -11,6 +11,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeSpec
 import java.time.OffsetDateTime
 
@@ -50,7 +51,16 @@ fun renderInterface(converter: RenderConverterClass, version: String, date: Offs
         val funcBuilder = FunSpec.builder(function.name).addModifiers(KModifier.OVERRIDE)
 
         function.parameters.forEach { parameter ->
-            val paramBuilder = ParameterSpec.builder(parameter.name, ClassName(parameter.type.packageName, parameter.type.name))
+
+            val paramType = ClassName(parameter.type.packageName, parameter.type.name)
+                    .let {
+                        if (parameter.type.typeParameters.isNotEmpty())
+                            it.parameterizedBy(parameter.type.typeParameters.map { ClassName(packageName = it.packageName, simpleNames = listOf(it.name)) })
+                        else
+                            it
+                    }
+
+            val paramBuilder = ParameterSpec.builder(parameter.name, paramType)
 
             funcBuilder.addParameter(paramBuilder.build())
         }

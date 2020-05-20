@@ -8,6 +8,7 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.time.OffsetDateTime
 
 fun renderExt(converter: RenderConverterClass, version: String, date: OffsetDateTime): String {
@@ -20,13 +21,18 @@ fun renderExt(converter: RenderConverterClass, version: String, date: OffsetDate
             .build()
     fsb.addAnnotation(generatedAnnotation)
 
-
-
     converter.converterFunctions.forEach { function ->
         val funcBuilder = FunSpec.builder(function.name).receiver(ClassName(function.parameters.first().type.packageName, function.parameters.first().type.name))
-
         function.parameters.drop(1).forEach { parameter ->
-            val paramBuilder = ParameterSpec.builder(parameter.name, ClassName(parameter.type.packageName, parameter.type.name))
+            val paramType = ClassName(parameter.type.packageName, parameter.type.name)
+                    .let {
+                        if (parameter.type.typeParameters.isNotEmpty())
+                            it.parameterizedBy(parameter.type.typeParameters.map { ClassName(packageName = it.packageName, simpleNames = listOf(it.name)) })
+                        else
+                            it
+                    }
+
+            val paramBuilder = ParameterSpec.builder(parameter.name, paramType)
 
             funcBuilder.addParameter(paramBuilder.build())
         }
@@ -65,7 +71,7 @@ private fun generateProtobufBuilderCall(fname: String, returnType: Type, mapping
                             if (it.conversionContext.usingElementMapping) {
                                 "?.map { ${functionCall(it.conversionContext.conversionFunction.name, "it", it.conversionContext.conversionFunction.isExtension)} }"
                             } else {
-                                "?.let { ${functionCall(it.conversionContext.conversionFunction.name, "it",  it.conversionContext.conversionFunction.isExtension)} }"
+                                "?.let { ${functionCall(it.conversionContext.conversionFunction.name, "it", it.conversionContext.conversionFunction.isExtension)} }"
                             }
                         } else {
                             ""
@@ -88,7 +94,7 @@ private fun generateProtobufBuilderCall(fname: String, returnType: Type, mapping
     return codeBuilder.build()
 }
 
-fun functionCall(fname: String, parameterName: String, isExtension: Boolean) = if (isExtension)   "$parameterName.$fname()" else "$fname($parameterName)"
+fun functionCall(fname: String, parameterName: String, isExtension: Boolean) = if (isExtension) "$parameterName.$fname()" else "$fname($parameterName)"
 
 
 private fun generateKotlinConstructorCallExt(type: Type, mappings: List<RenderPropertyMappings>, targetParameterName: String?): CodeBlock {
