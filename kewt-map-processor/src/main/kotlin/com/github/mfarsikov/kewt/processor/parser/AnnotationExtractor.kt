@@ -4,7 +4,6 @@ import com.github.mfarsikov.kewt.annotations.Mappings
 import com.github.mfarsikov.kewt.annotations.Target
 import com.github.mfarsikov.kewt.processor.extractClassName
 import com.github.mfarsikov.kewt.processor.extractPackage
-import com.squareup.kotlinpoet.asTypeName
 import com.sun.tools.javac.code.Symbol
 import com.sun.tools.javac.code.Type
 import javax.lang.model.element.Element
@@ -19,7 +18,7 @@ fun extractAnnotationsFromJavaPackage(e: Element): List<AnnotatedFunction> {
             .map {
                 AnnotatedFunction(
                         name = it.name.toString(),
-                        parameters = it.type.allparams().dropLast(1).mapIndexed() { i, paramType ->
+                        parameters = it.type.allparams().dropLast(1).mapIndexed { i, paramType ->
                             paramType as Type.WildcardType
                             AnnotatedFunctionParameter(
                                     name = "param$i",
@@ -65,11 +64,11 @@ data class AnnotatedFunctionParameter(
 
 
 fun Type.toSimpleType() = SimpleType(
-        packageName = asTypeName().toString().extractPackage(),
-        name = asTypeName().toString().extractClassName()
+        packageName = toString().extractPackage(),
+        name = toString().extractClassName()
 )
 
-fun  Type.WildcardType.toSimpleType() = SimpleType(
+fun Type.WildcardType.toSimpleType() = SimpleType(
         packageName = type.toString().extractPackage(),
         name = type.toString().extractClassName()
 )

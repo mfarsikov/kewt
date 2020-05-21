@@ -47,7 +47,6 @@ class KewtMapperProcessor : AbstractProcessor() {
         springComponent = processingEnv.options["kewt.generate.spring"]?.toBoolean() ?: false
         whitelist = processingEnv.options["kewt.whitelist"]?.split(" ") ?: emptyList()
         blacklist = processingEnv.options["kewt.blacklist"]?.split(" ") ?: emptyList()
-
     }
 
     override fun process(annotations: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
@@ -58,7 +57,7 @@ class KewtMapperProcessor : AbstractProcessor() {
                 .getResource("META-INF/build-info.properties")
                 ?.readText() ?: "unknown version"
 
-        Logger.info("Start processing @Mapper annotations")
+        Logger.debug("Start processing @Mapper annotations")
 
         try {
             val propertiesResolver = PropertiesResolver(roundEnv, processingEnv)
@@ -99,7 +98,7 @@ class KewtMapperProcessor : AbstractProcessor() {
                     Logger.error(ex, "Cannot process ${element.simpleName}: ${ex.message}")
                 }
             }
-            Logger.info("Finished processing @Mapper annotations")
+            Logger.debug("Finished processing @Mapper annotations")
         } catch (ex: Throwable) {
             Logger.error(ex, "Kewt annotiation processor finished exceptionally")
             throw ex
@@ -261,7 +260,7 @@ class KewtMapperProcessor : AbstractProcessor() {
                 whitelist.isNotEmpty() && whitelist.none { pkg.startsWith(it) } || //TODO class level?
                 blacklist.isNotEmpty() && blacklist.any { pkg.startsWith(it) }
         ) {
-            Logger.info("Skip ${pkg}")
+            Logger.debug("Skip ${pkg}")
             true
         } else {
             false
