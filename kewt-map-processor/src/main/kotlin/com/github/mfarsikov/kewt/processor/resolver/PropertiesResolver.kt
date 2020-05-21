@@ -87,7 +87,8 @@ class PropertiesResolver(
                                 val listSuffix = if (it.name.endsWith("List")) "List" else ""
                                 val name = it.name.substringBeforeLast("List")
                                 "${name}OrBuilder${listSuffix}"
-                            }
+                            } +
+                            getters.map { it.name + "Value" }
 
                     val realGetters = getters.filter { it.name !in gettersForExclusion }
                     val properties = realGetters.map {
@@ -154,7 +155,7 @@ class PropertiesResolver(
 
         Class.forName(listOf(type.packageName, type.name).filter { it.isNotBlank() }.joinToString(separator = "."))
     } catch (ex: ClassNotFoundException) {
-        throw KewtException("$type", ex)
+        throw KewtException("$type. Add dependency to kapt configuration.", ex)
     }
 
     private fun findType(nestedSourceNames: List<String>, type: Type): Type? =

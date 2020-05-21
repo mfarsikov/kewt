@@ -12,6 +12,7 @@ message Person{
   Pet pet = 5;
   repeated Passport passports = 6;
   map<string, string> properties = 7;
+  Mood mood = 8;
 }
 
 
@@ -24,6 +25,7 @@ message Employee{
   Pet pet = 5;
   repeated ID identities = 7;
   map<string, string> properties = 9;
+  Mood mood = 10;
 }
 
 message PersonName {
@@ -41,4 +43,9 @@ message Passport{
 
 message ID{
   string id = 1;
+}
+
+enum Mood{
+  HAPPY = 0;
+  UNHAPPY = 1;
 }

@@ -14,7 +14,7 @@ group = "com.github.mfarsikov"
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 dependencies {
-    implementation("com.github.mfarsikov:kewt-map-annotations:$version")
+    implementation(project(":kewt-map-annotations"))
 
     implementation("com.google.protobuf:protobuf-java:3.11.4")
     implementation("com.squareup:kotlinpoet:1.5.0")
