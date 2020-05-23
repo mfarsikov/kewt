@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm")
-    id("com.google.protobuf") version "0.8.8"
+    id("com.google.protobuf") version "0.8.12"
     idea
 }
 

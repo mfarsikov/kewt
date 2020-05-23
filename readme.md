@@ -2,6 +2,8 @@
 
 inspired by [Mapstruct](https://mapstruct.org/)
 
+![Bintray](https://img.shields.io/bintray/v/farsikov-max/kewt-map/kewt-map-processor?style=flat-square)
+
 ## Quick start
 
 `build.gradle.kts`:
@@ -13,8 +15,8 @@ repositories {
     jcenter()
 }
 dependencies {
-    implementation("com.github.mfarsikov:kewt-annotations:0.6.0")
-    kapt("com.github.mfarsikov:kewt-map-processor:0.6.0")
+    implementation("com.github.mfarsikov:kewt-annotations:0.7.0")
+    kapt("com.github.mfarsikov:kewt-map-processor:0.7.0")
 }
 ```
 
