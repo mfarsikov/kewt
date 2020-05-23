@@ -1,8 +1,11 @@
+![Bintray](https://img.shields.io/bintray/v/farsikov-max/kewt-map/kewt-map-processor?style=flat-square&color=blue)
+<img src="misc/kotlin-logo.svg" alt="drawing" width="20"/>
+
 # Kewt - Kotlin cute data-class mapping tool
 
 inspired by [Mapstruct](https://mapstruct.org/)
 
-![Bintray](https://img.shields.io/bintray/v/farsikov-max/kewt-map/kewt-map-processor?style=flat-square)
+
 
 ## Quick start
 
