@@ -7,14 +7,14 @@ inspired by [Mapstruct](https://mapstruct.org/)
 `build.gradle.kts`:
 ```kotlin
 plugins {
-    kotlin("kapt") version "1.3.71" //kotlinVersion
+    kotlin("kapt") version "1.3.72" //kotlinVersion
 }
 repositories {
     jcenter()
 }
 dependencies {
-    implementation("com.github.mfarsikov:kewt-annotations:0.1.9")
-    kapt("com.github.mfarsikov:kewt-map-processor:0.1.9")
+    implementation("com.github.mfarsikov:kewt-annotations:0.6.0")
+    kapt("com.github.mfarsikov:kewt-map-processor:0.6.0")
 }
 ```
 
@@ -33,8 +33,9 @@ interface PersonMapper {
     fun toEmployee(person: Person): Employee
 }
 ```
-Kewt will generate this code:
+Kewt generates this code:
 ```kotlin
+@Generated
 class PersonMapperImpl : PersonMapper {
   override fun toEmployee(person: Person) = Employee(
       age = person.age,
@@ -47,53 +48,61 @@ class PersonMapperImpl : PersonMapper {
 ## Mapping strategies
 
 ### General concepts
-Classes can be mapped if each target field have found a single source.
-Mapping cannot be done if any target property can be mapped from more than one source. 
-In the same time it is allowed for sources to have not mapped (extra) fields.
+* Classes can be mapped if each target field have found a single source.
+* Mapping cannot be done if any target property can be mapped from more than one source. 
+* In the same time it is allowed to have not mapped (extra) sources.
 
-### Mapping
-Field mapping is possible if their type are the same, or they are convertible.
-
-#### Type matching
+### Implicitly by type, if it is not ambiguous
 Type matched if:
 * Types are identical:
   * `String => String`
   * `Employee => Employee`
   * `List<String> => List<String>`
-* Exist conversion function: 
+* Exist conversion function (abstract or not): 
   * `String => Int` if `(String) -> Int` conversion function provided
   * `Person => Employee` if `(Person) -> Employee` conversion function provided
   * `List<String> => List<Int>` if `(String) -> Int` conversion function provided
   * `List<Person> => List<Employee>` if `(Person) -> Employee` conversion function provided
-  
-#### Field mapping
-##### Explicitly in `@Mapping` annotation
-Has highest priority. Should be avoided in favor of implicit strategies.
-##### Implicitly by name, if it is not ambiguous
-If source property name and target property names are the same - fields match. This strategy could fail if provided more
-than one source with the same parameter name, and the same parameter type.
-##### Implicitly by type, if it is not ambiguous
-All fields not matched by explicit and implicit name matching could be matched by type, if type matching is not ambiguous.
+#### Example
 
-## Examples
-Working examples can be found in `examples` sub-project. To build them run `./gradlew build`
-
-### Implicit strategies
-#### Name and type match
-```kotlin
-data class Person(val id: UUID, val name: String, val age: Int)
-data class Employee(val id: UUID, val name: String, val age: Int)
-```
-
-Two classes have the same field names and their types. There is only one way of mapping in this case.
-
-#### Names match and there is appropriate type-converter
+##### Type match
 
 ```kotlin
-data class Person(val id: String, accountId: String)
-data class Employee(val id: UUID, accountId: UUID)
+data class Person  (val personId: UUID,   val personName: String,   val personAge: Int  )
+data class Employee(val employeeId: UUID, val employeeName: String, val employeeAge: Int)
+```
+There is only one way to map properties by their types.
+
+Generated code:
+```kotlin
+@Generated
+class PersonMapperImpl : PersonMapper {
+    override fun toEmployee(person: Person) = Employee(
+        employeeId = person.personId,
+        employeeName = person.personName,
+        employeeAge = person.personAge
+    )
+}
 ```
 
+##### Negative example (ambiguous mapping):
+```kotlin
+data class Person  (val key: UUID, userId: UUID)
+data class Employee(val id: UUID,  cardId: UUID)
+```
+
+These classes cannot be mapped implicitly, because there is ambiguity in fields mapping, all four variants are valid:
+`key = id`, `key = cardId`, `userId = id`, `userId = cardId`
+
+To solve this see [Explicit mapping](#explicit-mapping)
+
+##### Type match using a converter function
+
+```kotlin
+data class Person  (val personId: String)
+data class Employee(val employeeId: UUID)
+```
+Note that names are not matched and types are different.
 ```kotlin
 @Mapper
 interface PersonMapper{
@@ -103,64 +112,84 @@ interface PersonMapper{
     fun toUuid(s: String) = UUID.fromString(s) // Non-abstract converter (String) -> UUID
 }
 ```
-Kewt will map fields by name, and use conversion the function:
+Kewt maps fields by type using conversion function:
 ```kotlin
 @Generated
 class PersonMapperImpl : PersonMapper {
     override fun toEmployee(person: Person) = Employee(
-        id = toUuid(person.id),
-        accountId = toUuid(person.accountId)
+        employeeId = toUuid(person.personId)
     )
 }
 ```
 
-#### Type match and there is only one pair of fields could be matched
-
-despite name is not matched there is a way to map fields based on their types. 
-
+### Implicitly by name, if it is not ambiguous
+If source property name and target property names are the same - fields match. This strategy could fail if provided more
+than one source with the same parameter name, and the same parameter type.
+#### Example 
 ```kotlin
-data class Person(val key: UUID)
-data class Employee(val id: UUID)
+data class Person  (val id: UUID, userId: UUID)
+data class Employee(val id: UUID, userId: UUID)
 ```
 
-Generated code:
+### Explicitly in `@Mapping` annotation
+Has highest priority. Should be avoided in favor of implicit strategies.
+#### Example
+##### Explicit mapping
 ```kotlin
-@Generated
-class PersonMapperImpl : PersonMapper {
-    override fun toEmployee(person: Person) = Employee(id = person.key)
+data class Person  (val key: UUID, userId: UUID)
+data class Employee(val id: UUID,  cardId: UUID)
+```
+
+```kotlin
+interface PersonMapper {
+    @Mappings([
+        Mapping(source="key",    target="id"    ),
+        Mapping(source="userId", target="cardId")
+    ])  
+    fun toEmployee(person: Person): Employee
 }
 ```
 
-Negative example:
-
+It is not required to specify all the fields, it is enough just to resolve ambiguity, the rest kewt maps automatically: 
 ```kotlin
-data class Person(val key: UUID, userId: UUID)
-data class Employee(val id: UUID, cardId: UUID)
-```
-
-These classes cannot be mapped implicitly, because there is ambiguity in fields mapping, all four variants are valid:
-`key = id`, `key = cardId`, `userId = id`, `userId = cardId`
-
-
-#### There is appropriate type converter and only one pair of fields matched
-```kotlin
-data class Person(val id: UUID)
-data class Employee(val code: String)
-@Mapper
-interface PersonMapper{
-        fun toEmployee(person: Person): Employee 
-        
-        fun convertToString(uuid: UUID) = uuid.toString() 
+interface PersonMapper {
+    @Mappings([
+        Mapping(source="key", target="id")
+    ])  
+    fun toEmployee(person: Person): Employee
 }
 ```
-despite fields `id` and `code` have different name, there is a function for converting `UUID` to `String` //TODO
+##### Explicit converter
 
-### Explicit mapping
-TODO
+```kotlin
+data class Person  (val id: String)
+data class Employee(val id: UUID  )
+```
+There are two functions `(String) -> UUID` and to solve this ambiguity `converter` explicitly:
+```kotlin
+
+interface PersonMapper {
+
+    fun parseUuid(string: String): UUID = UUID.fromString(string) 
+    fun invalidConverter(string: String): UUID = throw RuntimeException()
+
+    @Mappings([
+        Mapping(source="id", target="id", converter="parseUuid")
+    ])  
+    fun toEmployee(person: Person): Employee
+}
+```
+### Examples
+Working examples can be found in `examples` sub-project. To build them run `./gradlew build`
+## Field lifting
+TODO see examples project
+## Map collection elements
+TODO see examples project
 ## Protobuf
-TODO
-## Spring
-TODO
+TODO see examples project
+
 
 ## Configuration
-TODO Spring, log, white/black listing
+### dependencies
+TODO Spring, log, white/black listing, see examples project
+### Spring
