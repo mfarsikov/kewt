@@ -2,9 +2,11 @@ package com.github.mfarsikov.kewt.processor.parser
 
 import com.github.mfarsikov.kewt.annotations.Mappings
 import com.github.mfarsikov.kewt.annotations.Target
+import com.github.mfarsikov.kewt.processor.extractClassName
 import com.github.mfarsikov.kewt.processor.extractPackage
 import com.squareup.kotlinpoet.asTypeName
 import com.sun.tools.javac.code.Symbol
+import com.sun.tools.javac.code.Type
 import javax.lang.model.element.Element
 
 fun extractAnnotationsFromJavaPackage(e: Element): List<AnnotatedFunction> {
@@ -12,12 +14,13 @@ fun extractAnnotationsFromJavaPackage(e: Element): List<AnnotatedFunction> {
 
     return e.members_field.elements.filterIsInstance<Symbol.VarSymbol>()
             .filter {
-                    it.type.tsym.type.toString().startsWith("kotlin.jvm.functions.Function")
+                it.type.tsym.type.toString().startsWith("kotlin.jvm.functions.Function")
             }
             .map {
                 AnnotatedFunction(
                         name = it.name.toString(),
-                        parameters = it.type.allparams().dropLast(1).mapIndexed() {i, paramType ->
+                        parameters = it.type.allparams().dropLast(1).mapIndexed() { i, paramType ->
+                            paramType as Type.WildcardType
                             AnnotatedFunctionParameter(
                                     name = "param$i",
                                     simpleType = paramType.toSimpleType(),
@@ -61,9 +64,14 @@ data class AnnotatedFunctionParameter(
 )
 
 
-fun com.sun.tools.javac.code.Type.toSimpleType() = SimpleType(
+fun Type.toSimpleType() = SimpleType(
         packageName = asTypeName().toString().extractPackage(),
-        name = asTypeName().toString().substringAfterLast(".")
+        name = asTypeName().toString().extractClassName()
+)
+
+fun  Type.WildcardType.toSimpleType() = SimpleType(
+        packageName = type.toString().extractPackage(),
+        name = type.toString().extractClassName()
 )
 
 /**
@@ -72,4 +80,6 @@ fun com.sun.tools.javac.code.Type.toSimpleType() = SimpleType(
 data class SimpleType(
         val packageName: String,
         val name: String
-)
+) {
+    override fun toString() = listOf(packageName, name).filter { it.isNotEmpty() }.joinToString(".")
+}

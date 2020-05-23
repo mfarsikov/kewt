@@ -7,6 +7,7 @@ import com.github.mfarsikov.kewt.processor.NameMapping
 import com.github.mfarsikov.kewt.processor.Nullability
 import com.github.mfarsikov.kewt.processor.Parameter
 import com.github.mfarsikov.kewt.processor.Type
+import com.github.mfarsikov.kewt.processor.extractClassName
 import com.github.mfarsikov.kewt.processor.extractPackage
 import com.github.mfarsikov.kewt.processor.mapper.Language
 import com.github.mfarsikov.kewt.processor.mapper.ResolvedType
@@ -189,7 +190,7 @@ private fun java.lang.reflect.Type.toType(): Type =
             } else
                 Type(
                         packageName = typeName.extractPackage(),
-                        name = typeName.substringAfterLast("."),
+                        name = typeName.extractClassName(),
                         nullability = Nullability.PLATFORM
                 )
         }
@@ -201,7 +202,7 @@ private data class Properties(
 
 private fun String.convertFromGetter() = substringAfter("get").decapitalize()
 
-private val types = listOf(//TODO check could it be skipped
+private val types = listOf(
         Type("kotlin", "String"),
         Type("kotlin", "Long"),
         Type("kotlin", "Int"),

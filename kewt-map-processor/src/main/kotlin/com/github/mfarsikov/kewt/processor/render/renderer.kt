@@ -89,7 +89,8 @@ private fun generateProtobufBuilderCall(returnType: Type, mappings: List<RenderP
     codeBuilder.indent()
     codeBuilder.add(
             mappings.map {
-                "${it.parameterName}.${it.sourcePropertyName}" +
+
+                listOf(it.parameterName, it.sourcePropertyName).filter { it.isNotEmpty() }.joinToString(".") +
                         if (it.conversionContext.conversionFunction != null) {
                             if (it.conversionContext.usingElementMapping) {
                                 "?.map { ${it.conversionContext.conversionFunction.name}(it) }"

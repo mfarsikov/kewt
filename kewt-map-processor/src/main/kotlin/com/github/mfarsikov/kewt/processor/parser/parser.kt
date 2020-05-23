@@ -5,6 +5,7 @@ import com.github.mfarsikov.kewt.processor.FunctionParameter
 import com.github.mfarsikov.kewt.processor.ParsedMapper
 import com.github.mfarsikov.kewt.processor.Type
 import com.github.mfarsikov.kewt.processor.mapper.AnnotationConfig
+import com.github.mfarsikov.kewt.processor.mapper.aliases
 import com.github.mfarsikov.kewt.processor.toSimpleType
 import com.github.mfarsikov.kewt.processor.toType
 import kotlinx.metadata.Flag
@@ -35,13 +36,14 @@ fun parseInterface(element: Element, processingEnv: ProcessingEnvironment, kotli
 
     val converterInterfaceMetadata = kotlinClassMetadata.toKmClass()
 
+    //"annotated" is bad name it is not actually annotated. it just could have @Target annotation. TODO rename
     val annotatedFunctions = extractAnnotationsFromJava(element)
 
     val parsedFunctions = converterInterfaceMetadata.functions.map { converterFunction ->
 
         val sig = FunctionSignature(name = converterFunction.name, params = converterFunction.valueParameters.map { it.type!!.toType().toSimpleType() })
 
-        val annotatedFunction = annotatedFunctions.singleOrNull { it.signature() == sig }
+        val annotatedFunction = annotatedFunctions.singleOrNull { it.signature() same sig }
 
         val inputParams = converterFunction.valueParameters.map { parameter ->
             FunctionParameter(
@@ -73,6 +75,11 @@ fun parseInterface(element: Element, processingEnv: ProcessingEnvironment, kotli
             isInterface = true
     )
 }
+
+infix fun FunctionSignature.same(g: FunctionSignature): Boolean =
+        name == g.name &&
+                params.zip(g.params)
+                        .all { (a, b) -> a in aliases[b] ?: listOf(b) }
 
 fun parseFile(element: Element, processingEnv: ProcessingEnvironment, kotlinClassMetadata: KotlinClassMetadata.FileFacade): ParsedMapper {
 
@@ -122,7 +129,7 @@ fun parseFile(element: Element, processingEnv: ProcessingEnvironment, kotlinClas
         val sig = FunctionSignature(name = property.name, params = property.returnType.arguments.dropLast(1).map { it.type!!.toType().toSimpleType() })
 
 
-        val annotatedFunction = annotatedFunctions.singleOrNull { it.signature() == sig }
+        val annotatedFunction = annotatedFunctions.singleOrNull { it.signature() same sig }
 
         val inputParams = property.returnType.arguments.dropLast(1).mapIndexed { i, parameter ->
             val type = parameter.type!!.toType()
@@ -178,8 +185,8 @@ fun AnnotatedFunction.signature() = FunctionSignature(
 )
 
 fun KotlinClassMetadata.FileFacade.kmFile(): KmPackage? = let {
-                    KmPackage().apply(it::accept)
-                }
+    KmPackage().apply(it::accept)
+}
 
 fun read(metadata: Metadata): KotlinClassMetadata? = metadata.let {
     KotlinClassHeader(

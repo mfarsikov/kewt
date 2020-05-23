@@ -43,8 +43,8 @@ tasks.withType<KotlinCompile> {
 
 kapt {
     arguments {
-        arg("kewt.log.level", "trace")
-  //      arg("kewt.whitelist", "com.github.mfarsikov.kewt.example.proto.ex02")
+        arg("kewt.log.level", "info")
+//        arg("kewt.whitelist", "com.github.mfarsikov.kewt.example.proto.ex02")
 //        arg("kewt.blacklist", "com.github.mfarsikov.kewt.example.proto")
     }
 }
