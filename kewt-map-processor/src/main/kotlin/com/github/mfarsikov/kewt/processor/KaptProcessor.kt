@@ -89,6 +89,7 @@ class KewtMapperProcessor : AbstractProcessor() {
                             mappingsResults
                     ))
 
+                    //TODO: configure output
                     val file = processingEnv.filer.createResource(StandardLocation.SOURCE_OUTPUT, parsedInterface.type.packageName, "${parsedInterface.type.name}Impl.kt", element)
 
                     file.openWriter().use { it.write(text) }

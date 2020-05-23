@@ -159,6 +159,7 @@ interface PersonMapper {
     fun toEmployee(person: Person): Employee
 }
 ```
+
 ##### Explicit converter
 
 ```kotlin
@@ -179,17 +180,99 @@ interface PersonMapper {
     fun toEmployee(person: Person): Employee
 }
 ```
+
 ### Examples
 Working examples can be found in `examples` sub-project. To build them run `./gradlew build`
-## Field lifting
-TODO see examples project
-## Map collection elements
-TODO see examples project
-## Protobuf
-TODO see examples project
+Generated code is under `build/generated/source/kapt/main`.
 
+## Field lifting
+```kotlin
+data class Person(val name: Name)
+data class Name(val firstName: String)
+
+data class Employee(val name: String)
+
+@Mapper
+interface PersonMapper {
+    @Mappings([
+        Mapping(source = "person.name.firstName", target = "name")
+    ])
+    fun toEmployee(person: Person): Employee
+}
+```
+Generated code:
+```kotlin
+@Generated
+class PersonMapperImpl : PersonMapper {
+  override fun toEmployee(person: Person) = Employee(
+      name = person.name.firstName
+  )
+}
+```
+
+## Map collection elements
+```kotlin
+
+data class Person(val ids: List<UUID>)
+data class Employee(val ids: List<String>)
+
+@Mapper
+interface PersonMapper {
+    fun toEmployee(person: Person): Employee
+    fun uuidToString(uuid: UUID): String = uuid.toString()
+}
+```
+
+Generated code: 
+```kotlin
+@Generated
+class PersonMapperImpl : PersonMapper {
+  override fun toEmployee(person: Person): Employee = Employee(
+      ids = person.ids.map { uuidToString(it) }
+  )
+}
+```
+
+## Protobuf
+Kewt can map protobuf classes using their builders.
+
+Add library with generated protobuf classes to `kapt` configurtion.
+
+## Dependencies
+All libraries used in mappers should be added to `kapt` configuration:
+```kotlin 
+dependencies {
+    kapt("com.nowhere:my-library:1.0.0")
+}
+```
 
 ## Configuration
-### dependencies
-TODO Spring, log, white/black listing, see examples project
+```kotlin
+kapt {
+    arguments {          
+        arg("kewt.generate.spring", "true")
+        arg("kewt.log.level", "debug")
+        arg("kewt.whitelist", "com.github.mfarsikov.kewt.example.proto.ex02")
+        arg("kewt.blacklist", "com.github.mfarsikov.kewt.example.proto")
+    }
+}           
+```
+
 ### Spring
+```kotlin
+arg("kewt.generate.spring", "true") 
+```
+Add a `@org.springframework.stereotype.Component` to the generated class.
+
+### Debugging
+#### Logging
+```kotlin
+arg("kewt.log.level", "debug")
+```
+Values: `error`, `warn`, `debug`, `trace`. Default: `warn`
+
+#### White/black listing packages
+```kotlin
+arg("kewt.whitelist", "com.github.mfarsikov.kewt.example.proto.ex02")
+arg("kewt.blacklist", "com.github.mfarsikov.kewt.example.proto")
+```
