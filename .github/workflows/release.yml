@@ -19,6 +19,8 @@ jobs:
         key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/*.gradle*') }}
         restore-keys: |
           ${{ runner.os }}-gradle-wrapper-
+    - name: Check
+      run: ./gradlew check
     - name: Bintray upload
       env:
         BINTRAY_USER: ${{ secrets.BINTRAY_USER }}

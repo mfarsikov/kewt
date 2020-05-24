@@ -93,7 +93,7 @@ class KewtMapperProcessor : AbstractProcessor() {
                     val file = processingEnv.filer.createResource(StandardLocation.SOURCE_OUTPUT, parsedInterface.type.packageName, "${parsedInterface.type.name}Impl.kt", element)
 
                     file.openWriter().use { it.write(text) }
-                }catch (ex: NotMappedTarget){
+                } catch (ex: NotMappedTarget) {
                     //ignore
                 } catch (ex: KewtException) {
                     Logger.error(ex, "Cannot process ${element.simpleName}: ${ex.message}")
@@ -186,8 +186,10 @@ class KewtMapperProcessor : AbstractProcessor() {
         val returnPropertiesWithDefaultValues = resolvedReturnType.properties.filter { it.hasDefaultValue }.map { it.name }.toSet()
 
 
-        val sources = resolvedSources.flatMap { it.resolvedType.properties } +
-                parsedFunction.parameters.map { Source(it.name, path = emptyList(), type = it.type) }
+        val sources = (
+                resolvedSources.flatMap { it.resolvedType.properties } +
+                        parsedFunction.parameters.map { Source(it.name, path = emptyList(), type = it.type) }
+                ).distinct()
 
         val targets = resolvedReturnType.properties.map { Parameter(it.name, it.type) }.toSet()
 
@@ -272,14 +274,14 @@ class KewtMapperProcessor : AbstractProcessor() {
             sources: List<Parameter>,
             annotationConfigs: List<AnnotationConfig>
     ): List<NameMapping> =
-            if (sources.size == 1 && annotationConfigs.none { it.source.startsWith("${sources.single().name}.") }) {
+            if (sources.size == 1 && annotationConfigs.none { it.source.startsWith("${sources.single().name}.") || it.source == sources.single().name }) {
                 annotationConfigs.map { it.copy(source = "${sources.single().name}.${it.source}") }
             } else {
                 annotationConfigs
             }.map {
                 NameMapping(
                         parameterName = it.source.split(".").first(),
-                        sourcePath = it.source.substringAfter(".").split("."),
+                        sourcePath = it.source.split(".").drop(1),
                         targetParameterName = it.target
                 )
             }

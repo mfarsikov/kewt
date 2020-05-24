@@ -135,7 +135,7 @@ private fun explicitMapping(
     if (sourceParameter.isEmpty()) throw KewtException("not found parameter with name: ${explicitNameMapping.parameterName}")
 
     val property = sourceParameter.singleOrNull { it.path == explicitNameMapping.sourcePath }
-            ?: throw KewtException("Not existing source: ${explicitNameMapping.parameterName}.${explicitNameMapping.sourcePath}")
+            ?: throw KewtException("Not existing source: ${explicitNameMapping.parameterName}.${explicitNameMapping.sourcePath}, among: ${sourceParameter.map { it.path }} ")
 
 
     val c = typeMatcher.findConversion(property.type, targetProperty.type, explicitConverter)

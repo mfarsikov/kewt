@@ -288,6 +288,31 @@ class MappingProcessorTest {
     }
 
     @Test
+    fun `use parameter as explicit source`() {
+           val res =  calculateMappings1(
+                    sources = listOf(
+                            Source(parameterName = "person", path = listOf(), type = Type("myPkg", "Person"))
+                    ),
+                    targets = listOf(Parameter(name = "lastName", type = STRING)),
+                    nameMappings = listOf(NameMapping(parameterName = "person", sourcePath = emptyList(), targetParameterName = "lastName")),
+                    conversionFunctions = listOf(
+                            MapperConversionFunction(
+                                    name = "f",
+                                    parameter =  Parameter(name = "x", type = Type("myPkg", "Person")),
+                                    returnType = STRING
+                            )
+                    )
+            )
+
+        with(res.single()){
+            this.source.parameterName shouldBe "person"
+            this.source.path shouldBe emptyList()
+            this.conversionContext!!.conversionFunction!!.name shouldBe "f"
+            this.target.name shouldBe "lastName"
+        }
+    }
+
+    @Test
     fun `merge two sources`() {
         val res = calculateMappings1(
                 sources = listOf(
