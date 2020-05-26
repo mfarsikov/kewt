@@ -1,4 +1,5 @@
 ![Bintray](https://img.shields.io/bintray/v/farsikov-max/kewt-map/kewt-map-processor?style=flat-square&color=blue)
+![Tests](https://github.com/mfarsikov/kewt/workflows/CI/badge.svg)
 <img src="misc/kotlin-logo.svg" alt="drawing" width="20"/>
 
 # Kewt - Kotlin cute data-class mapping tool
