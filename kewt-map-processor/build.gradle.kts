@@ -100,6 +100,7 @@ bintray {
     user = System.getenv("BINTRAY_USER")
     key = System.getenv("BINTRAY_KEY")
     setPublications("bintray")
+    isPublish = true
     with(pkg) {
         repo = "kewt-map"
         name = "kewt-map-processor"

@@ -28,7 +28,13 @@ kewtVersioning {
             add {
                 regexes = mutableListOf(".*".toRegex())
                 incrementer = MINOR
-                stringify = { version -> stringifier(useBranch = version.isSnapshot, useSha = false, useTimestamp = false)(version)}
+                stringify = { version ->
+                    stringifier(
+                            useBranch = version.isSnapshot,
+                            useSha = false,
+                            useTimestamp = false
+                    )(version)
+                }
             }
         }
     }
