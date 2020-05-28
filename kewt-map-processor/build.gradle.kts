@@ -113,3 +113,6 @@ bintray {
         }
     }
 }
+tasks.named("bintrayUpload"){
+    dependsOn(":check")
+}
