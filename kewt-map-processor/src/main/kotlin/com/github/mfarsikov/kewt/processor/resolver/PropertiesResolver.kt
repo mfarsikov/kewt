@@ -117,7 +117,7 @@ class PropertiesResolver(
                 Logger.debug("Kotlin class: ${type.qualifiedName()} ")
                 //KOTLIN
                 val properties = loadFromLibrary.getAnnotation(Metadata::class.java).kmClass()!!
-                        .constructors.single { Flag.Constructor.IS_PRIMARY.invoke(it.flags) }
+                        .constructors.single { !Flag.Constructor.IS_SECONDARY.invoke(it.flags) }
                         .valueParameters
                         .map {//TODO fallback to java if km is null?
                             ConstructorParameter(
@@ -134,7 +134,7 @@ class PropertiesResolver(
         } else {
             Logger.trace("Found in sources: ${type.qualifiedName()} ")
             val c = element.getAnnotation(Metadata::class.java).kmClass()!!//TODO fallback to java if km is null?
-            val properties = c.constructors.single { Flag.Constructor.IS_PRIMARY.invoke(it.flags) }
+            val properties = c.constructors.single { !Flag.Constructor.IS_SECONDARY.invoke(it.flags) }
                     .valueParameters
                     .map {
                         ConstructorParameter(

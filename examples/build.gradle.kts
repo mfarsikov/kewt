@@ -25,9 +25,9 @@ dependencies {
 
     implementation("io.grpc:grpc-protobuf:1.26.0")
 
-    testImplementation("io.kotest:kotest-assertions-core-jvm:4.0.3")
-    testImplementation("io.kotest:kotest-runner-junit5-jvm:4.0.3")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
+    testImplementation("io.kotest:kotest-assertions-core-jvm:4.3.0")
+    testImplementation("io.kotest:kotest-runner-junit5-jvm:4.3.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.7.0")
 }
 
 tasks.test {

@@ -20,12 +20,12 @@ dependencies {
     implementation("com.squareup:kotlinpoet:1.5.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.1.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.2.0")
     implementation(files("${System.getProperty("java.home")}/../lib/tools.jar"))
 
-    testImplementation("io.kotest:kotest-assertions-core-jvm:4.0.3")
-    testImplementation("io.kotest:kotest-runner-junit5-jvm:4.0.3")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.6.2")
+    testImplementation("io.kotest:kotest-assertions-core-jvm:4.3.0")
+    testImplementation("io.kotest:kotest-runner-junit5-jvm:4.3.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.7.0")
     testImplementation("org.spockframework:spock-core")
     testImplementation(platform("org.spockframework:spock-bom:2.0-M1-groovy-2.5"))
 }
